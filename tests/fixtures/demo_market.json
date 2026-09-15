@@ -1,0 +1,866 @@
+{
+  "current_season": 2026,
+  "current_week": 8,
+  "trending_adds": {
+    "9012": 28000,
+    "9004": 15400,
+    "9000": 8470,
+    "9005": 4658,
+    "9009": 2562,
+    "9016": 1409,
+    "9013": 775,
+    "9014": 426,
+    "9001": 234,
+    "9006": 128,
+    "9015": 70,
+    "9002": 39,
+    "9017": 21,
+    "9007": 11,
+    "9010": 6,
+    "9003": 3,
+    "9008": 1,
+    "9011": 1
+  },
+  "market_by_espn_id": {
+    "2001": {
+      "percent_owned": 99.8,
+      "percent_started": 79.8,
+      "trending_adds": null
+    },
+    "2003": {
+      "percent_owned": 82.8,
+      "percent_started": 63.6,
+      "trending_adds": null
+    },
+    "2004": {
+      "percent_owned": 75.7,
+      "percent_started": 62.5,
+      "trending_adds": null
+    },
+    "2008": {
+      "percent_owned": 45.0,
+      "percent_started": 26.1,
+      "trending_adds": null
+    },
+    "2007": {
+      "percent_owned": 95.9,
+      "percent_started": 82.9,
+      "trending_adds": null
+    },
+    "2012": {
+      "percent_owned": 86.6,
+      "percent_started": 70.0,
+      "trending_adds": null
+    },
+    "2013": {
+      "percent_owned": 67.1,
+      "percent_started": 49.3,
+      "trending_adds": null
+    },
+    "2015": {
+      "percent_owned": 66.4,
+      "percent_started": 48.1,
+      "trending_adds": null
+    },
+    "2014": {
+      "percent_owned": 73.2,
+      "percent_started": 57.6,
+      "trending_adds": null
+    },
+    "2100": {
+      "percent_owned": 86.3,
+      "percent_started": 72.4,
+      "trending_adds": null
+    },
+    "2102": {
+      "percent_owned": 99.8,
+      "percent_started": 84.2,
+      "trending_adds": null
+    },
+    "2103": {
+      "percent_owned": 97.5,
+      "percent_started": 78.4,
+      "trending_adds": null
+    },
+    "2107": {
+      "percent_owned": 93.6,
+      "percent_started": 77.4,
+      "trending_adds": null
+    },
+    "2108": {
+      "percent_owned": 89.2,
+      "percent_started": 75.7,
+      "trending_adds": null
+    },
+    "2112": {
+      "percent_owned": 80.2,
+      "percent_started": 66.6,
+      "trending_adds": null
+    },
+    "2104": {
+      "percent_owned": 93.3,
+      "percent_started": 75.4,
+      "trending_adds": null
+    },
+    "2115": {
+      "percent_owned": 73.2,
+      "percent_started": 53.3,
+      "trending_adds": null
+    },
+    "2114": {
+      "percent_owned": 71.6,
+      "percent_started": 52.7,
+      "trending_adds": null
+    },
+    "2200": {
+      "percent_owned": 99.8,
+      "percent_started": 81.0,
+      "trending_adds": null
+    },
+    "2203": {
+      "percent_owned": 92.0,
+      "percent_started": 72.8,
+      "trending_adds": null
+    },
+    "2204": {
+      "percent_owned": 82.1,
+      "percent_started": 68.5,
+      "trending_adds": null
+    },
+    "2207": {
+      "percent_owned": 99.8,
+      "percent_started": 84.8,
+      "trending_adds": null
+    },
+    "2208": {
+      "percent_owned": 98.1,
+      "percent_started": 80.0,
+      "trending_adds": null
+    },
+    "2213": {
+      "percent_owned": 71.9,
+      "percent_started": 57.7,
+      "trending_adds": null
+    },
+    "2209": {
+      "percent_owned": 83.4,
+      "percent_started": 68.1,
+      "trending_adds": null
+    },
+    "2215": {
+      "percent_owned": 71.9,
+      "percent_started": 53.7,
+      "trending_adds": null
+    },
+    "2214": {
+      "percent_owned": 70.3,
+      "percent_started": 51.5,
+      "trending_adds": null
+    },
+    "2300": {
+      "percent_owned": 99.8,
+      "percent_started": 82.8,
+      "trending_adds": null
+    },
+    "2302": {
+      "percent_owned": 88.2,
+      "percent_started": 75.1,
+      "trending_adds": null
+    },
+    "2303": {
+      "percent_owned": 80.8,
+      "percent_started": 67.8,
+      "trending_adds": null
+    },
+    "2307": {
+      "percent_owned": 93.0,
+      "percent_started": 73.6,
+      "trending_adds": null
+    },
+    "2308": {
+      "percent_owned": 82.8,
+      "percent_started": 68.0,
+      "trending_adds": null
+    },
+    "2312": {
+      "percent_owned": 78.3,
+      "percent_started": 64.7,
+      "trending_adds": null
+    },
+    "2309": {
+      "percent_owned": 78.9,
+      "percent_started": 65.5,
+      "trending_adds": null
+    },
+    "2315": {
+      "percent_owned": 67.7,
+      "percent_started": 50.6,
+      "trending_adds": null
+    },
+    "2314": {
+      "percent_owned": 71.2,
+      "percent_started": 51.4,
+      "trending_adds": null
+    },
+    "2400": {
+      "percent_owned": 99.8,
+      "percent_started": 82.6,
+      "trending_adds": null
+    },
+    "2403": {
+      "percent_owned": 92.4,
+      "percent_started": 77.6,
+      "trending_adds": null
+    },
+    "2404": {
+      "percent_owned": 79.2,
+      "percent_started": 66.3,
+      "trending_adds": null
+    },
+    "2407": {
+      "percent_owned": 99.8,
+      "percent_started": 87.2,
+      "trending_adds": null
+    },
+    "2408": {
+      "percent_owned": 94.3,
+      "percent_started": 80.6,
+      "trending_adds": null
+    },
+    "2412": {
+      "percent_owned": 81.2,
+      "percent_started": 66.6,
+      "trending_adds": null
+    },
+    "2409": {
+      "percent_owned": 88.5,
+      "percent_started": 68.5,
+      "trending_adds": null
+    },
+    "2415": {
+      "percent_owned": 77.3,
+      "percent_started": 65.2,
+      "trending_adds": null
+    },
+    "2414": {
+      "percent_owned": 73.8,
+      "percent_started": 60.4,
+      "trending_adds": null
+    },
+    "2500": {
+      "percent_owned": 99.8,
+      "percent_started": 85.7,
+      "trending_adds": null
+    },
+    "2502": {
+      "percent_owned": 99.8,
+      "percent_started": 83.4,
+      "trending_adds": null
+    },
+    "2503": {
+      "percent_owned": 88.2,
+      "percent_started": 69.1,
+      "trending_adds": null
+    },
+    "2507": {
+      "percent_owned": 99.8,
+      "percent_started": 80.7,
+      "trending_adds": null
+    },
+    "2508": {
+      "percent_owned": 92.7,
+      "percent_started": 76.8,
+      "trending_adds": null
+    },
+    "2512": {
+      "percent_owned": 83.7,
+      "percent_started": 68.4,
+      "trending_adds": null
+    },
+    "2510": {
+      "percent_owned": 75.7,
+      "percent_started": 59.1,
+      "trending_adds": null
+    },
+    "2515": {
+      "percent_owned": 72.5,
+      "percent_started": 54.4,
+      "trending_adds": null
+    },
+    "2514": {
+      "percent_owned": 67.7,
+      "percent_started": 51.1,
+      "trending_adds": null
+    },
+    "2600": {
+      "percent_owned": 99.8,
+      "percent_started": 81.5,
+      "trending_adds": null
+    },
+    "2603": {
+      "percent_owned": 86.9,
+      "percent_started": 69.0,
+      "trending_adds": null
+    },
+    "2604": {
+      "percent_owned": 75.4,
+      "percent_started": 62.2,
+      "trending_adds": null
+    },
+    "2607": {
+      "percent_owned": 94.3,
+      "percent_started": 80.7,
+      "trending_adds": null
+    },
+    "2608": {
+      "percent_owned": 85.6,
+      "percent_started": 65.9,
+      "trending_adds": null
+    },
+    "2612": {
+      "percent_owned": 78.0,
+      "percent_started": 58.3,
+      "trending_adds": null
+    },
+    "2609": {
+      "percent_owned": 78.9,
+      "percent_started": 64.0,
+      "trending_adds": null
+    },
+    "2615": {
+      "percent_owned": 45.0,
+      "percent_started": 30.9,
+      "trending_adds": null
+    },
+    "2614": {
+      "percent_owned": 67.7,
+      "percent_started": 51.6,
+      "trending_adds": null
+    },
+    "2700": {
+      "percent_owned": 99.8,
+      "percent_started": 86.1,
+      "trending_adds": null
+    },
+    "2702": {
+      "percent_owned": 92.7,
+      "percent_started": 75.2,
+      "trending_adds": null
+    },
+    "2703": {
+      "percent_owned": 83.7,
+      "percent_started": 69.3,
+      "trending_adds": null
+    },
+    "2707": {
+      "percent_owned": 92.7,
+      "percent_started": 76.7,
+      "trending_adds": null
+    },
+    "2708": {
+      "percent_owned": 87.6,
+      "percent_started": 70.7,
+      "trending_adds": null
+    },
+    "2712": {
+      "percent_owned": 78.3,
+      "percent_started": 64.7,
+      "trending_adds": null
+    },
+    "2709": {
+      "percent_owned": 78.9,
+      "percent_started": 66.0,
+      "trending_adds": null
+    },
+    "2715": {
+      "percent_owned": 69.0,
+      "percent_started": 56.1,
+      "trending_adds": null
+    },
+    "2714": {
+      "percent_owned": 71.9,
+      "percent_started": 55.4,
+      "trending_adds": null
+    },
+    "2800": {
+      "percent_owned": 99.8,
+      "percent_started": 87.6,
+      "trending_adds": null
+    },
+    "2802": {
+      "percent_owned": 99.4,
+      "percent_started": 80.8,
+      "trending_adds": null
+    },
+    "2803": {
+      "percent_owned": 93.3,
+      "percent_started": 75.5,
+      "trending_adds": null
+    },
+    "2807": {
+      "percent_owned": 99.7,
+      "percent_started": 85.4,
+      "trending_adds": null
+    },
+    "2808": {
+      "percent_owned": 93.3,
+      "percent_started": 73.6,
+      "trending_adds": null
+    },
+    "2812": {
+      "percent_owned": 84.7,
+      "percent_started": 64.7,
+      "trending_adds": null
+    },
+    "2804": {
+      "percent_owned": 82.8,
+      "percent_started": 66.9,
+      "trending_adds": null
+    },
+    "2815": {
+      "percent_owned": 73.5,
+      "percent_started": 57.0,
+      "trending_adds": null
+    },
+    "2814": {
+      "percent_owned": 45.0,
+      "percent_started": 29.7,
+      "trending_adds": null
+    },
+    "2900": {
+      "percent_owned": 99.8,
+      "percent_started": 87.2,
+      "trending_adds": null
+    },
+    "2902": {
+      "percent_owned": 95.9,
+      "percent_started": 81.0,
+      "trending_adds": null
+    },
+    "2903": {
+      "percent_owned": 82.4,
+      "percent_started": 68.4,
+      "trending_adds": null
+    },
+    "2907": {
+      "percent_owned": 94.0,
+      "percent_started": 78.9,
+      "trending_adds": null
+    },
+    "2908": {
+      "percent_owned": 88.5,
+      "percent_started": 69.4,
+      "trending_adds": null
+    },
+    "2912": {
+      "percent_owned": 81.8,
+      "percent_started": 64.9,
+      "trending_adds": null
+    },
+    "2909": {
+      "percent_owned": 84.0,
+      "percent_started": 67.5,
+      "trending_adds": null
+    },
+    "2915": {
+      "percent_owned": 65.8,
+      "percent_started": 46.2,
+      "trending_adds": null
+    },
+    "2914": {
+      "percent_owned": 75.4,
+      "percent_started": 55.9,
+      "trending_adds": null
+    },
+    "2000": {
+      "percent_owned": 99.8,
+      "percent_started": 84.8,
+      "trending_adds": null
+    },
+    "2002": {
+      "percent_owned": 67.1,
+      "percent_started": 47.6,
+      "trending_adds": null
+    },
+    "2006": {
+      "percent_owned": 71.9,
+      "percent_started": 57.3,
+      "trending_adds": null
+    },
+    "2009": {
+      "percent_owned": 79.2,
+      "percent_started": 67.0,
+      "trending_adds": null
+    },
+    "2010": {
+      "percent_owned": 78.3,
+      "percent_started": 60.0,
+      "trending_adds": null
+    },
+    "2011": {
+      "percent_owned": 67.1,
+      "percent_started": 52.0,
+      "trending_adds": null
+    },
+    "2101": {
+      "percent_owned": 70.9,
+      "percent_started": 58.0,
+      "trending_adds": null
+    },
+    "2105": {
+      "percent_owned": 70.0,
+      "percent_started": 50.8,
+      "trending_adds": null
+    },
+    "2106": {
+      "percent_owned": 62.3,
+      "percent_started": 43.2,
+      "trending_adds": null
+    },
+    "2109": {
+      "percent_owned": 81.8,
+      "percent_started": 67.0,
+      "trending_adds": null
+    },
+    "2110": {
+      "percent_owned": 72.5,
+      "percent_started": 59.6,
+      "trending_adds": null
+    },
+    "2113": {
+      "percent_owned": 63.2,
+      "percent_started": 44.1,
+      "trending_adds": null
+    },
+    "2201": {
+      "percent_owned": 92.0,
+      "percent_started": 74.2,
+      "trending_adds": null
+    },
+    "2205": {
+      "percent_owned": 75.1,
+      "percent_started": 62.9,
+      "trending_adds": null
+    },
+    "2206": {
+      "percent_owned": 64.5,
+      "percent_started": 52.5,
+      "trending_adds": null
+    },
+    "2210": {
+      "percent_owned": 76.0,
+      "percent_started": 57.4,
+      "trending_adds": null
+    },
+    "2211": {
+      "percent_owned": 68.4,
+      "percent_started": 54.5,
+      "trending_adds": null
+    },
+    "2212": {
+      "percent_owned": 45.0,
+      "percent_started": 29.9,
+      "trending_adds": null
+    },
+    "2301": {
+      "percent_owned": 45.0,
+      "percent_started": 25.8,
+      "trending_adds": null
+    },
+    "2304": {
+      "percent_owned": 72.8,
+      "percent_started": 59.5,
+      "trending_adds": null
+    },
+    "2305": {
+      "percent_owned": 68.4,
+      "percent_started": 53.8,
+      "trending_adds": null
+    },
+    "2306": {
+      "percent_owned": 64.5,
+      "percent_started": 50.6,
+      "trending_adds": null
+    },
+    "2310": {
+      "percent_owned": 70.9,
+      "percent_started": 56.7,
+      "trending_adds": null
+    },
+    "2313": {
+      "percent_owned": 64.8,
+      "percent_started": 47.9,
+      "trending_adds": null
+    },
+    "2401": {
+      "percent_owned": 94.3,
+      "percent_started": 78.9,
+      "trending_adds": null
+    },
+    "2405": {
+      "percent_owned": 71.6,
+      "percent_started": 57.9,
+      "trending_adds": null
+    },
+    "2406": {
+      "percent_owned": 71.9,
+      "percent_started": 52.1,
+      "trending_adds": null
+    },
+    "2410": {
+      "percent_owned": 45.0,
+      "percent_started": 28.8,
+      "trending_adds": null
+    },
+    "2411": {
+      "percent_owned": 64.8,
+      "percent_started": 52.1,
+      "trending_adds": null
+    },
+    "2413": {
+      "percent_owned": 65.8,
+      "percent_started": 51.8,
+      "trending_adds": null
+    },
+    "2501": {
+      "percent_owned": 45.0,
+      "percent_started": 27.2,
+      "trending_adds": null
+    },
+    "2504": {
+      "percent_owned": 45.0,
+      "percent_started": 31.3,
+      "trending_adds": null
+    },
+    "2505": {
+      "percent_owned": 71.9,
+      "percent_started": 53.3,
+      "trending_adds": null
+    },
+    "2506": {
+      "percent_owned": 62.3,
+      "percent_started": 44.6,
+      "trending_adds": null
+    },
+    "2511": {
+      "percent_owned": 70.3,
+      "percent_started": 51.1,
+      "trending_adds": null
+    },
+    "2513": {
+      "percent_owned": 65.8,
+      "percent_started": 47.5,
+      "trending_adds": null
+    },
+    "2601": {
+      "percent_owned": 83.1,
+      "percent_started": 66.5,
+      "trending_adds": null
+    },
+    "2605": {
+      "percent_owned": 68.4,
+      "percent_started": 52.5,
+      "trending_adds": null
+    },
+    "2606": {
+      "percent_owned": 64.2,
+      "percent_started": 51.2,
+      "trending_adds": null
+    },
+    "2610": {
+      "percent_owned": 68.7,
+      "percent_started": 49.6,
+      "trending_adds": null
+    },
+    "2611": {
+      "percent_owned": 63.6,
+      "percent_started": 48.6,
+      "trending_adds": null
+    },
+    "2613": {
+      "percent_owned": 66.8,
+      "percent_started": 47.1,
+      "trending_adds": null
+    },
+    "2701": {
+      "percent_owned": 81.5,
+      "percent_started": 63.5,
+      "trending_adds": null
+    },
+    "2704": {
+      "percent_owned": 77.6,
+      "percent_started": 60.3,
+      "trending_adds": null
+    },
+    "2705": {
+      "percent_owned": 71.6,
+      "percent_started": 56.4,
+      "trending_adds": null
+    },
+    "2706": {
+      "percent_owned": 63.9,
+      "percent_started": 44.4,
+      "trending_adds": null
+    },
+    "2711": {
+      "percent_owned": 60.4,
+      "percent_started": 45.1,
+      "trending_adds": null
+    },
+    "2713": {
+      "percent_owned": 63.9,
+      "percent_started": 44.0,
+      "trending_adds": null
+    },
+    "2801": {
+      "percent_owned": 93.3,
+      "percent_started": 80.9,
+      "trending_adds": null
+    },
+    "2805": {
+      "percent_owned": 73.8,
+      "percent_started": 58.9,
+      "trending_adds": null
+    },
+    "2809": {
+      "percent_owned": 81.2,
+      "percent_started": 67.8,
+      "trending_adds": null
+    },
+    "2810": {
+      "percent_owned": 71.2,
+      "percent_started": 52.8,
+      "trending_adds": null
+    },
+    "2811": {
+      "percent_owned": 69.0,
+      "percent_started": 49.9,
+      "trending_adds": null
+    },
+    "2813": {
+      "percent_owned": 67.4,
+      "percent_started": 52.8,
+      "trending_adds": null
+    },
+    "2901": {
+      "percent_owned": 45.0,
+      "percent_started": 26.0,
+      "trending_adds": null
+    },
+    "2904": {
+      "percent_owned": 78.9,
+      "percent_started": 65.9,
+      "trending_adds": null
+    },
+    "2905": {
+      "percent_owned": 73.8,
+      "percent_started": 59.2,
+      "trending_adds": null
+    },
+    "2906": {
+      "percent_owned": 65.2,
+      "percent_started": 45.2,
+      "trending_adds": null
+    },
+    "2910": {
+      "percent_owned": 70.3,
+      "percent_started": 55.0,
+      "trending_adds": null
+    },
+    "2913": {
+      "percent_owned": 63.6,
+      "percent_started": 49.9,
+      "trending_adds": null
+    },
+    "9012": {
+      "percent_owned": 38.0,
+      "percent_started": 14.0,
+      "trending_adds": 28000
+    },
+    "9004": {
+      "percent_owned": 34.0,
+      "percent_started": 12.0,
+      "trending_adds": 15400
+    },
+    "9000": {
+      "percent_owned": 30.0,
+      "percent_started": 10.0,
+      "trending_adds": 8470
+    },
+    "9005": {
+      "percent_owned": 26.0,
+      "percent_started": 8.0,
+      "trending_adds": 4658
+    },
+    "9009": {
+      "percent_owned": 22.0,
+      "percent_started": 6.0,
+      "trending_adds": 2562
+    },
+    "9016": {
+      "percent_owned": 18.0,
+      "percent_started": 4.0,
+      "trending_adds": 1409
+    },
+    "9013": {
+      "percent_owned": 14.0,
+      "percent_started": 2.0,
+      "trending_adds": 775
+    },
+    "9014": {
+      "percent_owned": 10.0,
+      "percent_started": 0.1,
+      "trending_adds": 426
+    },
+    "9001": {
+      "percent_owned": 6.0,
+      "percent_started": 0.1,
+      "trending_adds": 234
+    },
+    "9006": {
+      "percent_owned": 2.0,
+      "percent_started": 0.1,
+      "trending_adds": 128
+    },
+    "9015": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 70
+    },
+    "9002": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 39
+    },
+    "9017": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 21
+    },
+    "9007": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 11
+    },
+    "9010": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 6
+    },
+    "9003": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 3
+    },
+    "9008": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 1
+    },
+    "9011": {
+      "percent_owned": 0.4,
+      "percent_started": 0.1,
+      "trending_adds": 1
+    }
+  }
+}

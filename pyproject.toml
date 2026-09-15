@@ -1,0 +1,114 @@
+[project]
+name = "ffmcp"
+version = "0.1.0"
+description = "MCP server for ESPN fantasy football: lineup optimization, trade evaluation and season simulation"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Jeremy Lachowicz" }]
+keywords = ["mcp", "model-context-protocol", "fantasy-football", "espn", "llm-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+]
+dependencies = [
+    "mcp>=2.2,<3",
+    "espn-api>=0.46,<0.47",
+    "httpx2>=2.5",
+    "numpy>=2.1",
+    "pydantic>=2.13",
+    "pydantic-settings>=2.7",
+]
+
+[project.scripts]
+ffmcp = "ffmcp.server:main"
+
+[project.urls]
+Repository = "https://github.com/jeremylachowicz/fantasyFootballMCP"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "mypy>=1.13",
+    "ruff>=0.8",
+    "poethepoet>=0.30",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ffmcp"]
+
+# ---------------------------------------------------------------------------
+# Task runner. Cross-platform replacement for a Makefile so the same commands
+# work on Windows and in CI. Run with: uv run poe <task>
+# ---------------------------------------------------------------------------
+[tool.poe.tasks]
+ruff-lint = { cmd = "ruff check .", help = "Lint" }
+ruff-fmt = { cmd = "ruff format --check .", help = "Check formatting" }
+types = { cmd = "mypy", help = "Type-check (strict)" }
+test = { cmd = "pytest", help = "Run tests" }
+fmt = { shell = "ruff format . && ruff check --fix .", help = "Auto-format and fix" }
+bench = { cmd = "python scripts/bench_tokens.py", help = "Regenerate README token benchmark" }
+bench-check = { cmd = "python scripts/bench_tokens.py --check", help = "Fail if the README benchmark table is stale" }
+demo = { cmd = "python scripts/demo.py", help = "Scripted tour against fixtures, no credentials" }
+fixtures = { cmd = "python scripts/make_demo_fixture.py", help = "Regenerate the committed demo league fixture" }
+serve-stdio = { cmd = "python -m ffmcp.server --transport stdio", env = { FFMCP_MODE = "demo" }, help = "Run a live stdio server against fixtures, for a real MCP client" }
+serve = { cmd = "python -m ffmcp.server --transport streamable-http", help = "Run over Streamable HTTP" }
+# A shell task, not a cmd task: on Windows `npx` is `npx.cmd`, and a bare `cmd` task is spawned
+# directly without PATHEXT resolution, so it fails with "program not found" even when Node is
+# installed. Going through a shell resolves the extension on every platform.
+inspect = { shell = "npx -y @modelcontextprotocol/inspector uv run ffmcp", env = { FFMCP_MODE = "demo" }, help = "Open the MCP Inspector (needs Node.js 18+)" }
+
+[tool.poe.tasks.lint]
+help = "Lint and format check"
+sequence = [{ ref = "ruff-lint" }, { ref = "ruff-fmt" }]
+
+[tool.poe.tasks.check]
+help = "Everything CI runs"
+sequence = [{ ref = "lint" }, { ref = "types" }, { ref = "test" }, { ref = "bench-check" }]
+
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+# Ruff formats fenced code in Markdown; the docs use hand-aligned columns to make
+# examples readable, so leave prose alone.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ffmcp"]
+
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+warn_unreachable = true
+enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
+
+# espn-api ships no type information.
+[[tool.mypy.overrides]]
+module = ["espn_api.*"]
+ignore_missing_imports = true
+
+# anthropic is an optional, lazily-imported dependency (src/ffmcp/tokencount.py): the exact
+# token-counting backend, used only when the package happens to be installed and a key is set.
+[[tool.mypy.overrides]]
+module = ["anthropic.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"

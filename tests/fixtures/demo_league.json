@@ -1,0 +1,4328 @@
+{
+  "settings": {
+    "league_id": 1234567,
+    "season": 2026,
+    "team_count": 10,
+    "playoff_team_count": 4,
+    "reg_season_weeks": 14,
+    "slot_counts": {
+      "QB": 1,
+      "RB": 2,
+      "WR": 2,
+      "TE": 1,
+      "RB/WR/TE": 1,
+      "D/ST": 1,
+      "K": 1,
+      "BE": 6,
+      "IR": 1
+    },
+    "scoring_type": "PPR"
+  },
+  "current_week": 8,
+  "teams": [
+    {
+      "team_id": 1,
+      "name": "Team Alpha",
+      "abbrev": "ALP",
+      "wins": 3,
+      "losses": 4,
+      "ties": 0,
+      "points_for": 677.0,
+      "points_against": 768.5,
+      "standing": 6,
+      "playoff_pct": 3.2,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2001,
+              "name": "Luca Petrov",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "LAC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 22.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2003,
+              "name": "Soren Quintero",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "DAL",
+              "injured": true,
+              "injury_status": "OUT",
+              "projection": {
+                "week": 8,
+                "points": 11.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2004,
+              "name": "Isaiah Adeyemi",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "IND",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 9.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2008,
+              "name": "Tariq Whitlock",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "SEA",
+              "injured": false,
+              "injury_status": null,
+              "projection": null,
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2007,
+              "name": "Damon Rios",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "GB",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.9,
+                "source": "espn"
+              },
+              "market": null,
+              "live_points": 2.4
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2012,
+              "name": "Luca Santoro",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NO",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2013,
+              "name": "Devin Obi",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "DET",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 6.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2015,
+              "name": "WSH D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "WSH",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 6.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2014,
+              "name": "Tobias Prescott",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "MIN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2000,
+            "name": "Quentin Hargrove",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "IND",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 19.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2002,
+            "name": "Tariq Moreau",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "KC",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.9,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2006,
+            "name": "Dominic Okafor",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "TEN",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2009,
+            "name": "Marcus Moreau",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYG",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 10.7,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2010,
+            "name": "Elijah Villanueva",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NE",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 10.4,
+              "source": "espn"
+            },
+            "market": null,
+            "live_points": 29.1
+          },
+          {
+            "player_id": 2011,
+            "name": "Devin Holloway",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BAL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.9,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2005,
+            "name": "Luca Novak",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "MIA",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": {
+              "week": 8,
+              "points": 5.2,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 2,
+      "name": "Team Bravo",
+      "abbrev": "BRA",
+      "wins": 6,
+      "losses": 1,
+      "ties": 0,
+      "points_for": 824.3,
+      "points_against": 782.5,
+      "standing": 2,
+      "playoff_pct": 92.7,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2100,
+              "name": "Marcus Adeyemi",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "NYG",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2102,
+              "name": "Luca Castellan",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2103,
+              "name": "Beckett Battaglia",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NYJ",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 16.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2107,
+              "name": "Tariq Osei",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "KC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2108,
+              "name": "Ezra Brennan",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "TEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2112,
+              "name": "Tariq Nakamura",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PIT",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2104,
+              "name": "Caleb Castellan",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "BAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2115,
+              "name": "CAR D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "CAR",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2114,
+              "name": "Soren Obi",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "ARI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.3,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2101,
+            "name": "Marcus Quintero",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "IND",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.1,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2105,
+            "name": "Luca Nwosu",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "LAR",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.8,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2106,
+            "name": "Dominic Hargrove",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "ATL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2109,
+            "name": "Tobias Obi",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CHI",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 11.5,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2110,
+            "name": "Nico Santoro",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NE",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.6,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2113,
+            "name": "Cormac Rowland",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DET",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.7,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2111,
+            "name": "Damon Ellington",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CLE",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 3,
+      "name": "Team Charlie",
+      "abbrev": "CHA",
+      "wins": 4,
+      "losses": 3,
+      "ties": 0,
+      "points_for": 768.6,
+      "points_against": 753.0,
+      "standing": 5,
+      "playoff_pct": 51.4,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2200,
+              "name": "Ezra Prescott",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "NE",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 23.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2203,
+              "name": "Silas Rowland",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "LAR",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 14.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2204,
+              "name": "Idris Fairbanks",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PIT",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2207,
+              "name": "Jalen Quintero",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "GB",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 19.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2208,
+              "name": "Quentin Vasquez",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 16.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2213,
+              "name": "Nico Thackeray",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "MIN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2209,
+              "name": "Cormac Holloway",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NYJ",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2215,
+              "name": "PHI D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "PHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2214,
+              "name": "Tariq Ashworth",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "IND",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 7.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2201,
+            "name": "Ezra Moreau",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "KC",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 14.7,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2205,
+            "name": "Quentin Ferraro",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DET",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 9.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2206,
+            "name": "Emmett Moreau",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BAL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.1,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2210,
+            "name": "Emmett Brennan",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "ARI",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 9.7,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2211,
+            "name": "Cormac Caldwell",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYG",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2212,
+            "name": "Caleb Whitlock",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "LV",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2202,
+            "name": "Xavier Santoro",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CLE",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 4,
+      "name": "Team Delta",
+      "abbrev": "DEL",
+      "wins": 1,
+      "losses": 6,
+      "ties": 0,
+      "points_for": 655.3,
+      "points_against": 752.7,
+      "standing": 10,
+      "playoff_pct": 0.1,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2300,
+              "name": "Cormac Larkin",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "DAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2302,
+              "name": "Theo Kimura",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NYG",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2303,
+              "name": "Damon Rowland",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "HOU",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2307,
+              "name": "Ronan Rios",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "KC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2308,
+              "name": "Ronan Quintero",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "ARI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2312,
+              "name": "Nico Holloway",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "TEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2309,
+              "name": "Ronan Lindqvist",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "SF",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2315,
+              "name": "BUF D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "BUF",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 7.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2314,
+              "name": "Jalen Santoro",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "LAC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2301,
+            "name": "Quentin Battaglia",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "SEA",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          },
+          {
+            "player_id": 2304,
+            "name": "Luca Nakamura",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "IND",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.7,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2305,
+            "name": "Damon Holloway",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NE",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2306,
+            "name": "Xavier Whitlock",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "PIT",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.1,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2310,
+            "name": "Tobias Whitlock",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CAR",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.1,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2313,
+            "name": "Marcus Mbeki",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BAL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.2,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2311,
+            "name": "Malik Vasquez",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CIN",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": {
+              "week": 8,
+              "points": 6.0,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 5,
+      "name": "Team Echo",
+      "abbrev": "ECH",
+      "wins": 6,
+      "losses": 1,
+      "ties": 0,
+      "points_for": 887.0,
+      "points_against": 759.9,
+      "standing": 1,
+      "playoff_pct": 96.6,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2400,
+              "name": "Emmett Lindqvist",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "PHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 22.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2403,
+              "name": "Dominic Villanueva",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "LAC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 14.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2404,
+              "name": "Jalen Nakamura",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NO",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2407,
+              "name": "Ezra Lindqvist",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "CHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2408,
+              "name": "Cormac Vasquez",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "MIN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2412,
+              "name": "Dominic Whitlock",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "BAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.3,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2409,
+              "name": "Devin Villanueva",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2415,
+              "name": "MIA D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "MIA",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2414,
+              "name": "Jalen Adeyemi",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "IND",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 9.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2401,
+            "name": "Ezra Rowland",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "NE",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 15.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2405,
+            "name": "Malik Ivanov",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "GB",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2406,
+            "name": "Emmett Novak",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DET",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2410,
+            "name": "Ronan Castellan",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "LV",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          },
+          {
+            "player_id": 2411,
+            "name": "Tariq Lindqvist",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DEN",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.2,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2413,
+            "name": "Soren Ellington",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BUF",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.5,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2402,
+            "name": "Luca Ferraro",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "SEA",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 6,
+      "name": "Team Foxtrot",
+      "abbrev": "FOX",
+      "wins": 5,
+      "losses": 2,
+      "ties": 0,
+      "points_for": 806.4,
+      "points_against": 704.6,
+      "standing": 3,
+      "playoff_pct": 85.3,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2500,
+              "name": "Tariq Delgado",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "BAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 22.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2502,
+              "name": "Soren Castellan",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "SF",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2503,
+              "name": "Damon Caldwell",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "IND",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2507,
+              "name": "Soren Delgado",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "HOU",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2508,
+              "name": "Malik Obi",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "WSH",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 14.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2512,
+              "name": "Beckett Fairbanks",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "DAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2510,
+              "name": "Xavier Fairbanks",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "MIN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 9.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2515,
+              "name": "JAX D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2514,
+              "name": "Tobias Santoro",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "DEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 7.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2501,
+            "name": "Jonah Duval",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "SEA",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          },
+          {
+            "player_id": 2504,
+            "name": "Marcus Strand",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "TB",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          },
+          {
+            "player_id": 2505,
+            "name": "Marcus Villanueva",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "TEN",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2506,
+            "name": "Caleb Ashworth",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CAR",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2511,
+            "name": "Idris Duval",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYG",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.9,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2513,
+            "name": "Ezra Rios",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "ATL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.5,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2509,
+            "name": "Quentin Osei",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CLE",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 7,
+      "name": "Team Golf",
+      "abbrev": "GOL",
+      "wins": 1,
+      "losses": 6,
+      "ties": 0,
+      "points_for": 657.6,
+      "points_against": 750.7,
+      "standing": 9,
+      "playoff_pct": 0.0,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2600,
+              "name": "Dominic Lindqvist",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "NYG",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 18.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2603,
+              "name": "Tobias Duval",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "LAC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2604,
+              "name": "Quentin Duval",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 9.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2607,
+              "name": "Luca Ellington",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "DET",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2608,
+              "name": "Caleb Thackeray",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "GB",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2612,
+              "name": "Theo Novak",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.3,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2609,
+              "name": "Caleb Sarsgaard",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NO",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2615,
+              "name": "TB D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "TB",
+              "injured": false,
+              "injury_status": null,
+              "projection": null,
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2614,
+              "name": "Amari Moreau",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "BAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 7.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2601,
+            "name": "Xavier Villanueva",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "SF",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 11.9,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2605,
+            "name": "Griffin Sarsgaard",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYJ",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2606,
+            "name": "Malik Battaglia",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "WSH",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.0,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2610,
+            "name": "Emmett Villanueva",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DEN",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2611,
+            "name": "Quentin Villanueva",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BUF",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.8,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2613,
+            "name": "Roman Santoro",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CHI",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.8,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2602,
+            "name": "Rashad Delgado",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "SEA",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 8,
+      "name": "Team Hotel",
+      "abbrev": "HOT",
+      "wins": 5,
+      "losses": 2,
+      "ties": 0,
+      "points_for": 802.5,
+      "points_against": 719.1,
+      "standing": 4,
+      "playoff_pct": 57.4,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2700,
+              "name": "Soren Lindqvist",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "DEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 19.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2702,
+              "name": "Amari Rowland",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "HOU",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 14.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2703,
+              "name": "Tariq Villanueva",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "TEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2707,
+              "name": "Beckett Abernathy",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "IND",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 14.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2708,
+              "name": "Malik Ellington",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "ARI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.3,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2712,
+              "name": "Silas Prescott",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PIT",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2709,
+              "name": "Marcus Rios",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "LAC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 10.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2715,
+              "name": "BUF D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "BUF",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 7.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2714,
+              "name": "Cormac Novak",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2701,
+            "name": "Luca Villanueva",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "DET",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 11.4,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2704,
+            "name": "Quentin Abernathy",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "PHI",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 10.2,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2705,
+            "name": "Isaiah Brennan",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "GB",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2706,
+            "name": "Cormac Sinclair",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "KC",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.9,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2711,
+            "name": "Ronan Moreau",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYG",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 4.8,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2713,
+            "name": "Silas Kimura",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "WSH",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.9,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2710,
+            "name": "Xavier Sarsgaard",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "LV",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": null,
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 9,
+      "name": "Team India",
+      "abbrev": "IND",
+      "wins": 2,
+      "losses": 5,
+      "ties": 0,
+      "points_for": 779.1,
+      "points_against": 836.7,
+      "standing": 7,
+      "playoff_pct": 8.3,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2800,
+              "name": "Dominic Thackeray",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "DET",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 21.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2802,
+              "name": "Silas Sarsgaard",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "ARI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 17.0,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2803,
+              "name": "Ezra Strand",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2807,
+              "name": "Dominic Duval",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "MIA",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 17.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2808,
+              "name": "Jonah Caldwell",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "GB",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.1,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2812,
+              "name": "Kieran Vance",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "WSH",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.4,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2804,
+              "name": "Nico Ellington",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "SF",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.8,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2815,
+              "name": "KC D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "KC",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 8.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2814,
+              "name": "Elijah Rowland",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "TB",
+              "injured": false,
+              "injury_status": null,
+              "projection": null,
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2801,
+            "name": "Malik Sinclair",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "NYJ",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 15.1,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2805,
+            "name": "Ronan Strand",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "ATL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 9.0,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2809,
+            "name": "Jonah Novak",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NE",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 11.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2810,
+            "name": "Elijah Quintero",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NO",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 8.2,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2811,
+            "name": "Jalen Okafor",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "CHI",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.5,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2813,
+            "name": "Luca Osei",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "DAL",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.0,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2806,
+            "name": "Rashad Brennan",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "PIT",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": {
+              "week": 8,
+              "points": 5.3,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ]
+      }
+    },
+    {
+      "team_id": 10,
+      "name": "Team Juliet",
+      "abbrev": "JUL",
+      "wins": 2,
+      "losses": 5,
+      "ties": 0,
+      "points_for": 715.4,
+      "points_against": 745.5,
+      "standing": 8,
+      "playoff_pct": 4.9,
+      "roster": {
+        "slots": [
+          {
+            "slot": "QB",
+            "player": {
+              "player_id": 2900,
+              "name": "Xavier Hargrove",
+              "position": "QB",
+              "eligible_slots": [
+                "QB"
+              ],
+              "pro_team": "WSH",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 19.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2902,
+              "name": "Luca Okafor",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.9,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB",
+            "player": {
+              "player_id": 2903,
+              "name": "Nico Larkin",
+              "position": "RB",
+              "eligible_slots": [
+                "RB",
+                "RB/WR/TE"
+              ],
+              "pro_team": "CHI",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.7,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2907,
+              "name": "Damon Vasquez",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "PIT",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 15.3,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "WR",
+            "player": {
+              "player_id": 2908,
+              "name": "Beckett Sinclair",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "GB",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 13.6,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "TE",
+            "player": {
+              "player_id": 2912,
+              "name": "Ezra Novak",
+              "position": "TE",
+              "eligible_slots": [
+                "TE",
+                "RB/WR/TE"
+              ],
+              "pro_team": "NE",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 11.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "RB/WR/TE",
+            "player": {
+              "player_id": 2909,
+              "name": "Kieran Abernathy",
+              "position": "WR",
+              "eligible_slots": [
+                "WR",
+                "RB/WR/TE"
+              ],
+              "pro_team": "JAX",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 12.2,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "D/ST",
+            "player": {
+              "player_id": 2915,
+              "name": "DAL D/ST",
+              "position": "D/ST",
+              "eligible_slots": [
+                "D/ST"
+              ],
+              "pro_team": "DAL",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 6.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          },
+          {
+            "slot": "K",
+            "player": {
+              "player_id": 2914,
+              "name": "Amari Obi",
+              "position": "K",
+              "eligible_slots": [
+                "K"
+              ],
+              "pro_team": "DEN",
+              "injured": false,
+              "injury_status": null,
+              "projection": {
+                "week": 8,
+                "points": 9.5,
+                "source": "espn"
+              },
+              "market": null
+            }
+          }
+        ],
+        "bench": [
+          {
+            "player_id": 2901,
+            "name": "Caleb Rowland",
+            "position": "QB",
+            "eligible_slots": [
+              "QB"
+            ],
+            "pro_team": "LV",
+            "injured": false,
+            "injury_status": null,
+            "projection": null,
+            "market": null
+          },
+          {
+            "player_id": 2904,
+            "name": "Devin Santoro",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "TEN",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 10.6,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2905,
+            "name": "Emmett Nakamura",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NYG",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 9.0,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2906,
+            "name": "Ronan Rowland",
+            "position": "RB",
+            "eligible_slots": [
+              "RB",
+              "RB/WR/TE"
+            ],
+            "pro_team": "SF",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 6.3,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2910,
+            "name": "Silas Hargrove",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "NO",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 7.9,
+              "source": "espn"
+            },
+            "market": null
+          },
+          {
+            "player_id": 2913,
+            "name": "Griffin Ferraro",
+            "position": "TE",
+            "eligible_slots": [
+              "TE",
+              "RB/WR/TE"
+            ],
+            "pro_team": "LAR",
+            "injured": false,
+            "injury_status": null,
+            "projection": {
+              "week": 8,
+              "points": 5.8,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ],
+        "ir": [
+          {
+            "player_id": 2911,
+            "name": "Ezra Whitlock",
+            "position": "WR",
+            "eligible_slots": [
+              "WR",
+              "RB/WR/TE"
+            ],
+            "pro_team": "BUF",
+            "injured": true,
+            "injury_status": "INJURY_RESERVE",
+            "projection": {
+              "week": 8,
+              "points": 4.6,
+              "source": "espn"
+            },
+            "market": null
+          }
+        ]
+      }
+    }
+  ],
+  "matchups": {
+    "1": [
+      {
+        "week": 1,
+        "home_team_id": 1,
+        "away_team_id": 2,
+        "home_score": 115.6,
+        "away_score": 125.6,
+        "home_projected": 106.1,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 1,
+        "home_team_id": 3,
+        "away_team_id": 10,
+        "home_score": 98.9,
+        "away_score": 86.3,
+        "home_projected": 121.7,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 1,
+        "home_team_id": 4,
+        "away_team_id": 9,
+        "home_score": 130.9,
+        "away_score": 112.7,
+        "home_projected": 105.9,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 1,
+        "home_team_id": 5,
+        "away_team_id": 8,
+        "home_score": 115.5,
+        "away_score": 127.4,
+        "home_projected": 125.7,
+        "away_projected": 111.6,
+        "is_playoff": false
+      },
+      {
+        "week": 1,
+        "home_team_id": 6,
+        "away_team_id": 7,
+        "home_score": 106.3,
+        "away_score": 95.8,
+        "home_projected": 125.5,
+        "away_projected": 97.6,
+        "is_playoff": false
+      }
+    ],
+    "2": [
+      {
+        "week": 2,
+        "home_team_id": 1,
+        "away_team_id": 3,
+        "home_score": 115.4,
+        "away_score": 113.4,
+        "home_projected": 106.1,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 2,
+        "home_team_id": 4,
+        "away_team_id": 2,
+        "home_score": 99.2,
+        "away_score": 100.3,
+        "home_projected": 105.9,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 2,
+        "home_team_id": 5,
+        "away_team_id": 10,
+        "home_score": 138.4,
+        "away_score": 122.0,
+        "home_projected": 125.7,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 2,
+        "home_team_id": 6,
+        "away_team_id": 9,
+        "home_score": 109.3,
+        "away_score": 89.9,
+        "home_projected": 125.5,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 2,
+        "home_team_id": 7,
+        "away_team_id": 8,
+        "home_score": 100.8,
+        "away_score": 124.6,
+        "home_projected": 97.6,
+        "away_projected": 111.6,
+        "is_playoff": false
+      }
+    ],
+    "3": [
+      {
+        "week": 3,
+        "home_team_id": 1,
+        "away_team_id": 4,
+        "home_score": 98.1,
+        "away_score": 95.5,
+        "home_projected": 106.1,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 3,
+        "home_team_id": 5,
+        "away_team_id": 3,
+        "home_score": 113.4,
+        "away_score": 86.9,
+        "home_projected": 125.7,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 3,
+        "home_team_id": 6,
+        "away_team_id": 2,
+        "home_score": 134.8,
+        "away_score": 134.9,
+        "home_projected": 125.5,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 3,
+        "home_team_id": 7,
+        "away_team_id": 10,
+        "home_score": 77.2,
+        "away_score": 91.0,
+        "home_projected": 97.6,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 3,
+        "home_team_id": 8,
+        "away_team_id": 9,
+        "home_score": 104.9,
+        "away_score": 98.6,
+        "home_projected": 111.6,
+        "away_projected": 118.6,
+        "is_playoff": false
+      }
+    ],
+    "4": [
+      {
+        "week": 4,
+        "home_team_id": 1,
+        "away_team_id": 5,
+        "home_score": 123.0,
+        "away_score": 137.0,
+        "home_projected": 106.1,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 4,
+        "home_team_id": 6,
+        "away_team_id": 4,
+        "home_score": 107.2,
+        "away_score": 81.9,
+        "home_projected": 125.5,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 4,
+        "home_team_id": 7,
+        "away_team_id": 3,
+        "home_score": 98.6,
+        "away_score": 111.1,
+        "home_projected": 97.6,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 4,
+        "home_team_id": 8,
+        "away_team_id": 2,
+        "home_score": 104.9,
+        "away_score": 117.7,
+        "home_projected": 111.6,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 4,
+        "home_team_id": 9,
+        "away_team_id": 10,
+        "home_score": 112.5,
+        "away_score": 89.7,
+        "home_projected": 118.6,
+        "away_projected": 115.8,
+        "is_playoff": false
+      }
+    ],
+    "5": [
+      {
+        "week": 5,
+        "home_team_id": 1,
+        "away_team_id": 6,
+        "home_score": 89.9,
+        "away_score": 82.2,
+        "home_projected": 106.1,
+        "away_projected": 125.5,
+        "is_playoff": false
+      },
+      {
+        "week": 5,
+        "home_team_id": 7,
+        "away_team_id": 5,
+        "home_score": 81.4,
+        "away_score": 120.6,
+        "home_projected": 97.6,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 5,
+        "home_team_id": 8,
+        "away_team_id": 4,
+        "home_score": 116.4,
+        "away_score": 78.7,
+        "home_projected": 111.6,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 5,
+        "home_team_id": 9,
+        "away_team_id": 3,
+        "home_score": 117.3,
+        "away_score": 151.6,
+        "home_projected": 118.6,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 5,
+        "home_team_id": 10,
+        "away_team_id": 2,
+        "home_score": 86.9,
+        "away_score": 93.4,
+        "home_projected": 115.8,
+        "away_projected": 119.7,
+        "is_playoff": false
+      }
+    ],
+    "6": [
+      {
+        "week": 6,
+        "home_team_id": 1,
+        "away_team_id": 7,
+        "home_score": 54.8,
+        "away_score": 81.6,
+        "home_projected": 106.1,
+        "away_projected": 97.6,
+        "is_playoff": false
+      },
+      {
+        "week": 6,
+        "home_team_id": 8,
+        "away_team_id": 6,
+        "home_score": 91.1,
+        "away_score": 127.6,
+        "home_projected": 111.6,
+        "away_projected": 125.5,
+        "is_playoff": false
+      },
+      {
+        "week": 6,
+        "home_team_id": 9,
+        "away_team_id": 5,
+        "home_score": 105.8,
+        "away_score": 128.1,
+        "home_projected": 118.6,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 6,
+        "home_team_id": 10,
+        "away_team_id": 4,
+        "home_score": 118.4,
+        "away_score": 86.1,
+        "home_projected": 115.8,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 6,
+        "home_team_id": 2,
+        "away_team_id": 3,
+        "home_score": 139.0,
+        "away_score": 107.1,
+        "home_projected": 119.7,
+        "away_projected": 121.7,
+        "is_playoff": false
+      }
+    ],
+    "7": [
+      {
+        "week": 7,
+        "home_team_id": 1,
+        "away_team_id": 8,
+        "home_score": 80.2,
+        "away_score": 133.2,
+        "home_projected": 106.1,
+        "away_projected": 111.6,
+        "is_playoff": false
+      },
+      {
+        "week": 7,
+        "home_team_id": 9,
+        "away_team_id": 7,
+        "home_score": 142.3,
+        "away_score": 122.2,
+        "home_projected": 118.6,
+        "away_projected": 97.6,
+        "is_playoff": false
+      },
+      {
+        "week": 7,
+        "home_team_id": 10,
+        "away_team_id": 6,
+        "home_score": 121.1,
+        "away_score": 139.0,
+        "home_projected": 115.8,
+        "away_projected": 125.5,
+        "is_playoff": false
+      },
+      {
+        "week": 7,
+        "home_team_id": 2,
+        "away_team_id": 5,
+        "home_score": 113.4,
+        "away_score": 134.0,
+        "home_projected": 119.7,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 7,
+        "home_team_id": 3,
+        "away_team_id": 4,
+        "home_score": 99.6,
+        "away_score": 83.0,
+        "home_projected": 121.7,
+        "away_projected": 105.9,
+        "is_playoff": false
+      }
+    ],
+    "8": [
+      {
+        "week": 8,
+        "home_team_id": 1,
+        "away_team_id": 9,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 8,
+        "home_team_id": 10,
+        "away_team_id": 8,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 115.8,
+        "away_projected": 111.6,
+        "is_playoff": false
+      },
+      {
+        "week": 8,
+        "home_team_id": 2,
+        "away_team_id": 7,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 119.7,
+        "away_projected": 97.6,
+        "is_playoff": false
+      },
+      {
+        "week": 8,
+        "home_team_id": 3,
+        "away_team_id": 6,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 121.7,
+        "away_projected": 125.5,
+        "is_playoff": false
+      },
+      {
+        "week": 8,
+        "home_team_id": 4,
+        "away_team_id": 5,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 105.9,
+        "away_projected": 125.7,
+        "is_playoff": false
+      }
+    ],
+    "9": [
+      {
+        "week": 9,
+        "home_team_id": 1,
+        "away_team_id": 10,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 9,
+        "home_team_id": 2,
+        "away_team_id": 9,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 119.7,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 9,
+        "home_team_id": 3,
+        "away_team_id": 8,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 121.7,
+        "away_projected": 111.6,
+        "is_playoff": false
+      },
+      {
+        "week": 9,
+        "home_team_id": 4,
+        "away_team_id": 7,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 105.9,
+        "away_projected": 97.6,
+        "is_playoff": false
+      },
+      {
+        "week": 9,
+        "home_team_id": 5,
+        "away_team_id": 6,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.7,
+        "away_projected": 125.5,
+        "is_playoff": false
+      }
+    ],
+    "10": [
+      {
+        "week": 10,
+        "home_team_id": 1,
+        "away_team_id": 2,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 10,
+        "home_team_id": 3,
+        "away_team_id": 10,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 121.7,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 10,
+        "home_team_id": 4,
+        "away_team_id": 9,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 105.9,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 10,
+        "home_team_id": 5,
+        "away_team_id": 8,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.7,
+        "away_projected": 111.6,
+        "is_playoff": false
+      },
+      {
+        "week": 10,
+        "home_team_id": 6,
+        "away_team_id": 7,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.5,
+        "away_projected": 97.6,
+        "is_playoff": false
+      }
+    ],
+    "11": [
+      {
+        "week": 11,
+        "home_team_id": 1,
+        "away_team_id": 3,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 11,
+        "home_team_id": 4,
+        "away_team_id": 2,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 105.9,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 11,
+        "home_team_id": 5,
+        "away_team_id": 10,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.7,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 11,
+        "home_team_id": 6,
+        "away_team_id": 9,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.5,
+        "away_projected": 118.6,
+        "is_playoff": false
+      },
+      {
+        "week": 11,
+        "home_team_id": 7,
+        "away_team_id": 8,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 97.6,
+        "away_projected": 111.6,
+        "is_playoff": false
+      }
+    ],
+    "12": [
+      {
+        "week": 12,
+        "home_team_id": 1,
+        "away_team_id": 4,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 12,
+        "home_team_id": 5,
+        "away_team_id": 3,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.7,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 12,
+        "home_team_id": 6,
+        "away_team_id": 2,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.5,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 12,
+        "home_team_id": 7,
+        "away_team_id": 10,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 97.6,
+        "away_projected": 115.8,
+        "is_playoff": false
+      },
+      {
+        "week": 12,
+        "home_team_id": 8,
+        "away_team_id": 9,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 111.6,
+        "away_projected": 118.6,
+        "is_playoff": false
+      }
+    ],
+    "13": [
+      {
+        "week": 13,
+        "home_team_id": 1,
+        "away_team_id": 5,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 13,
+        "home_team_id": 6,
+        "away_team_id": 4,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 125.5,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 13,
+        "home_team_id": 7,
+        "away_team_id": 3,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 97.6,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 13,
+        "home_team_id": 8,
+        "away_team_id": 2,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 111.6,
+        "away_projected": 119.7,
+        "is_playoff": false
+      },
+      {
+        "week": 13,
+        "home_team_id": 9,
+        "away_team_id": 10,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 118.6,
+        "away_projected": 115.8,
+        "is_playoff": false
+      }
+    ],
+    "14": [
+      {
+        "week": 14,
+        "home_team_id": 1,
+        "away_team_id": 6,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 106.1,
+        "away_projected": 125.5,
+        "is_playoff": false
+      },
+      {
+        "week": 14,
+        "home_team_id": 7,
+        "away_team_id": 5,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 97.6,
+        "away_projected": 125.7,
+        "is_playoff": false
+      },
+      {
+        "week": 14,
+        "home_team_id": 8,
+        "away_team_id": 4,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 111.6,
+        "away_projected": 105.9,
+        "is_playoff": false
+      },
+      {
+        "week": 14,
+        "home_team_id": 9,
+        "away_team_id": 3,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 118.6,
+        "away_projected": 121.7,
+        "is_playoff": false
+      },
+      {
+        "week": 14,
+        "home_team_id": 10,
+        "away_team_id": 2,
+        "home_score": 0.0,
+        "away_score": 0.0,
+        "home_projected": 115.8,
+        "away_projected": 119.7,
+        "is_playoff": false
+      }
+    ]
+  },
+  "free_agents": {
+    "8": [
+      {
+        "player_id": 9000,
+        "name": "Devin Ivanov",
+        "position": "RB",
+        "eligible_slots": [
+          "RB",
+          "RB/WR/TE"
+        ],
+        "pro_team": "CIN",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 12.4,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9001,
+        "name": "Nico Mbeki",
+        "position": "RB",
+        "eligible_slots": [
+          "RB",
+          "RB/WR/TE"
+        ],
+        "pro_team": "DEN",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 7.1,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9002,
+        "name": "Roman Mbeki",
+        "position": "RB",
+        "eligible_slots": [
+          "RB",
+          "RB/WR/TE"
+        ],
+        "pro_team": "ATL",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 5.8,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9003,
+        "name": "Damon Sinclair",
+        "position": "RB",
+        "eligible_slots": [
+          "RB",
+          "RB/WR/TE"
+        ],
+        "pro_team": "NYG",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 4.2,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9004,
+        "name": "Caleb Fairbanks",
+        "position": "WR",
+        "eligible_slots": [
+          "WR",
+          "RB/WR/TE"
+        ],
+        "pro_team": "KC",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 13.1,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9005,
+        "name": "Idris Battaglia",
+        "position": "WR",
+        "eligible_slots": [
+          "WR",
+          "RB/WR/TE"
+        ],
+        "pro_team": "CHI",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 10.6,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9006,
+        "name": "Griffin Fairbanks",
+        "position": "WR",
+        "eligible_slots": [
+          "WR",
+          "RB/WR/TE"
+        ],
+        "pro_team": "MIA",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 6.4,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9007,
+        "name": "Rashad Ellington",
+        "position": "WR",
+        "eligible_slots": [
+          "WR",
+          "RB/WR/TE"
+        ],
+        "pro_team": "NE",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 5.1,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9008,
+        "name": "Theo Rowland",
+        "position": "WR",
+        "eligible_slots": [
+          "WR",
+          "RB/WR/TE"
+        ],
+        "pro_team": "LAC",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 3.9,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9009,
+        "name": "Amari Ashworth",
+        "position": "TE",
+        "eligible_slots": [
+          "TE",
+          "RB/WR/TE"
+        ],
+        "pro_team": "NO",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 9.3,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9010,
+        "name": "Theo Brennan",
+        "position": "TE",
+        "eligible_slots": [
+          "TE",
+          "RB/WR/TE"
+        ],
+        "pro_team": "GB",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 4.6,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9011,
+        "name": "Caleb Novak",
+        "position": "TE",
+        "eligible_slots": [
+          "TE",
+          "RB/WR/TE"
+        ],
+        "pro_team": "TEN",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 3.1,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9012,
+        "name": "Soren Ashworth",
+        "position": "QB",
+        "eligible_slots": [
+          "QB"
+        ],
+        "pro_team": "CAR",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 14.2,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9013,
+        "name": "Luca Hargrove",
+        "position": "QB",
+        "eligible_slots": [
+          "QB"
+        ],
+        "pro_team": "DAL",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 8.7,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9014,
+        "name": "Elijah Abernathy",
+        "position": "K",
+        "eligible_slots": [
+          "K"
+        ],
+        "pro_team": "MIN",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 7.9,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9015,
+        "name": "Cormac Brennan",
+        "position": "K",
+        "eligible_slots": [
+          "K"
+        ],
+        "pro_team": "JAX",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 6.2,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9016,
+        "name": "ARI D/ST",
+        "position": "D/ST",
+        "eligible_slots": [
+          "D/ST"
+        ],
+        "pro_team": "ARI",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 8.8,
+          "source": "espn"
+        },
+        "market": null
+      },
+      {
+        "player_id": 9017,
+        "name": "BUF D/ST",
+        "position": "D/ST",
+        "eligible_slots": [
+          "D/ST"
+        ],
+        "pro_team": "BUF",
+        "injured": false,
+        "injury_status": null,
+        "projection": {
+          "week": 8,
+          "points": 5.5,
+          "source": "espn"
+        },
+        "market": null
+      }
+    ]
+  }
+}
