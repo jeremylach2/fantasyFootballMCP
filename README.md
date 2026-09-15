@@ -1,9 +1,15 @@
 # fantasyFootballMCP
 
-An MCP server that answers the four questions a fantasy football manager actually asks (*who
+I lost last year's fantasy league, and I am determined to never lose again.
+Instead of studying draft tactics, doing deep dives on new players, obssesing over my lineup every week,,, I would rather create this :) 
+
+One of my mistakes last year was trusting ESPN analytics, so I used Claude to help me discover metrics and algos I can use to maximize my team's point potential per week.
+
+I created an MCP server that answers the four questions a fantasy football manager actually asks (*who
 should I start, should I make this trade, who should I pick up, will I make the playoffs*)
 by doing the analysis in Python and returning the conclusion, not the data.
 
+### Let's jump in 
 ```
 $ optimize_lineup()
 {
@@ -121,9 +127,9 @@ IR    L. Novak         RB   MIA 5.2   I
 +0.8 points of win probability this week. `analyze_matchup` prices the week:
 
 ```
-Week 8: Team Alpha 106.1 vs Team India 118.6 — 39% win prob
+Week 8: Team Alpha 106.1 vs Team Charlie 118.6 — 39% win prob
 Biggest edges:
-  RB: Team India +25.9
+  RB: Team Charlie +25.9
   K: Team Alpha +8.8
   WR: Team Alpha +4.8
 Swing player: D. Duval (WR MIA, ±9.4 pts)
@@ -291,12 +297,11 @@ answer is also *correct*, which the passthrough version would not reliably be.
 
 `tokens` comes from a deterministic local estimator so CI needs no API key and no network. The
 estimator's error against Anthropic's real token-counting endpoint has **not** been measured,
-since this environment had neither the optional `anthropic` package nor a key. That gap is
-stated plainly here rather than filled with a number nobody actually measured.
+since this environment had neither the optional `anthropic` package nor a key. This functionality will be added in the future if requested.
 
 ## The optimizer
 
-This is the part worth reading: [`src/ffmcp/domain/optimizer.py`](src/ffmcp/domain/optimizer.py).
+See: [`src/ffmcp/domain/optimizer.py`](src/ffmcp/domain/optimizer.py).
 
 Assign rostered players to starting slots to maximize total projected points, where each slot
 admits a set of positions (`RB/WR/TE` takes a back, receiver or tight end), each player fills at
