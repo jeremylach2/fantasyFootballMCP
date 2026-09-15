@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     team_id: int | None = None
     espn_s2: SecretStr | None = None
     swid: SecretStr | None = None
+    auth_token: SecretStr | None = None
     cache_dir: Path = Field(default=Path("~/.cache/ffmcp"))
     sims: int = 10_000
 

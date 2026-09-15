@@ -8,15 +8,20 @@ cache it and so host prompt caches hit more often.
 from __future__ import annotations
 
 import argparse
+import hmac
 import logging
 import sys
 from collections.abc import AsyncGenerator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
+import anyio
 import httpx2
 from mcp.server.caching import CacheableMethod, CacheHint
 from mcp.server.mcpserver import MCPServer
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from ffmcp import __version__
 from ffmcp.config import ConfigurationError, Settings, load_settings
@@ -155,6 +160,49 @@ def build_server() -> MCPServer:
     return mcp
 
 
+class BearerAuthMiddleware:
+    """Rejects any streamable-HTTP request that lacks a matching bearer token.
+
+    A plain ASGI middleware, not Starlette's ``BaseHTTPMiddleware``: that class buffers the
+    whole response before forwarding it, which breaks the long-lived SSE stream this transport
+    keeps open per request. Wrapping at the raw ASGI level passes each chunk straight through.
+    """
+
+    def __init__(self, app: ASGIApp, token: str) -> None:
+        self._app = app
+        self._expected = f"Bearer {token}"
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        provided = Request(scope).headers.get("authorization", "")
+        # constant-time: a length- or prefix-revealing comparison would let a remote attacker
+        # recover the token byte by byte through timing.
+        if not hmac.compare_digest(provided, self._expected):
+            response = JSONResponse({"error": "unauthorized"}, status_code=401)
+            await response(scope, receive, send)
+            return
+
+        await self._app(scope, receive, send)
+
+
+async def _serve_streamable_http(mcp: MCPServer, settings: Settings, host: str, port: int) -> None:
+    """Equivalent to ``mcp.run(transport="streamable-http", ...)``, except the app is wrapped in
+    ``BearerAuthMiddleware`` first when a token is configured. ``main()`` already refuses to
+    reach here in live mode without one (see the check there for why)."""
+    import uvicorn
+
+    app: ASGIApp = mcp.streamable_http_app(stateless_http=True, host=host)
+    if settings.auth_token is not None:
+        app = BearerAuthMiddleware(app, settings.auth_token.get_secret_value())
+
+    config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 def _configure_logging() -> None:
     """Log to stderr only.
 
@@ -191,16 +239,29 @@ def main() -> None:
     # forty-line ExceptionGroup traceback rather than the single actionable line the error was
     # written to be. Fail fast, on stderr, with a non-zero exit.
     try:
-        load_settings()
+        settings = load_settings()
     except (ConfigurationError, FFMCPError) as exc:
         print(f"ffmcp: {exc}", file=sys.stderr)
         raise SystemExit(2) from None
+
+    # Demo mode serves only synthetic fixtures, so an open HTTP endpoint is harmless and stays
+    # the documented no-friction way to try the server. Live mode reaches a real ESPN league
+    # through the owner's own cookies; without a token, anyone who finds the URL could read it.
+    needs_auth = args.transport == "streamable-http" and settings.mode == "live"
+    if needs_auth and settings.auth_token is None:
+        print(
+            "ffmcp: FFMCP_AUTH_TOKEN is required for --transport streamable-http in live mode "
+            "(an open endpoint would expose your league to anyone who finds the URL); "
+            "see .env.example.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
 
     mcp = build_server()
 
     if args.transport == "streamable-http":
         # Stateless matches the 2026-07-28 core and load-balances without sticky sessions.
-        mcp.run(transport="streamable-http", host=args.host, port=args.port, stateless_http=True)
+        anyio.run(lambda: _serve_streamable_http(mcp, settings, args.host, args.port))
     else:
         mcp.run()
 

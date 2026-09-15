@@ -429,10 +429,42 @@ and through an in-process `mcp.Client`, but not yet by hand through a GUI client
 ```bash
 docker build -t ffmcp .
 docker run -p 8000:8000 -e FFMCP_MODE=demo ffmcp        # no credentials
-docker run -p 8000:8000 --env-file .env ffmcp           # real league
+docker run -p 8000:8000 --env-file .env ffmcp           # real league, needs FFMCP_AUTH_TOKEN too
 ```
 
 Slim, non-root, streamable HTTP only: stdio does not make sense across a container boundary.
+
+A live-mode server refuses to start over HTTP without `FFMCP_AUTH_TOKEN` set (see
+`.env.example`) — with no auth layer, an internet-reachable endpoint would let anyone who found
+the URL read your real league through the tools. Every request must then carry it back as
+`Authorization: Bearer <token>`. Demo mode skips this: it only ever serves synthetic fixtures,
+so an open demo endpoint is harmless and is the easiest way to let someone try the server
+without configuring anything.
+
+## Deploying publicly for free
+
+[Render](https://render.com)'s free web service tier needs no credit card, builds straight from
+this repo's `Dockerfile`, and gives you a public HTTPS URL. The tradeoff: a free instance sleeps
+after 15 minutes idle and takes 30-50s to wake on the next request, which is fine for a tool an
+agent calls occasionally.
+
+1. Push this repo to GitHub (or use your fork).
+2. On Render: **New → Web Service**, connect the repo, environment **Docker**. Render detects
+   the `Dockerfile` automatically; leave the build/start commands blank.
+3. Set environment variables under the service's **Environment** tab:
+   - `FFMCP_MODE=live`, `FFMCP_LEAGUE_ID`, and (private leagues only) `FFMCP_ESPN_S2` /
+     `FFMCP_SWID` — same as `.env.example`.
+   - `FFMCP_AUTH_TOKEN` — generate one locally with
+     `python -c "import secrets; print(secrets.token_urlsafe(32))"` and paste it in. The server
+     will not start without this in live mode.
+   - Leave `PORT` alone; Render injects it and the container's entrypoint binds to
+     `$PORT` automatically (falling back to 8000 only when it's unset, e.g. a plain local
+     `docker run`).
+4. Deploy. Point any Streamable-HTTP MCP client at `https://<your-service>.onrender.com/mcp`
+   with header `Authorization: Bearer <your token>`.
+
+Rotate the token (just change the env var and redeploy) if it ever leaks — there is no session
+or expiry on it otherwise.
 
 ## License
 
