@@ -150,3 +150,42 @@ size of the response. That last field is what makes the token work measurable in
 rather than only in the benchmark, and it costs nothing.
 
 Optionally attach a `ServerMiddleware` to do this uniformly rather than decorating each tool.
+
+## 9. Future work: consensus-rank cross-check (not implemented)
+
+Chosen to not implement this to not require users to sign up for an account and create an API key.
+
+ESPN's own `projected_points` is the sole basis for every projection and VOR figure the server
+produces (`providers/espn.py`). For high-variance positions, such as D/ST and K, a
+handful of sacks or a return TD swings a week. One site's model can lag what the broader analyst
+community already knows (an O-line injury, a defensive coordinator change) faster than it can
+propagate into ESPN's own number. A second, independent signal would let a tool say "ESPN
+projects A over B, but expert consensus ranks B higher" instead of presenting ESPN's figure as
+uncontested.
+
+**Why this isn't built:** the design is straightforward, but a suitable data source is not. Two
+free options exist and neither fits:
+
+- **FantasyFootballCalculator ADP API** — genuinely free, no signup, attribution only
+  (help.fantasyfootballcalculator.com/article/42-adp-rest-api). But ADP is a draft-time signal; it
+  does not move week to week and cannot answer a weekly streaming question like D/ST.
+- **FantasyPros Public API** — the real weekly expert-consensus rankings data, but gated behind
+  account signup and an API key (fantasypros.com/api-data). Free at this scale, but not the
+  zero-friction, no-auth shape `SleeperMarketProvider` enjoys.
+
+Picking this up later means accepting the FantasyPros signup, or finding an equivalent weekly
+consensus source with a comparably open API.
+
+**Proposed shape, if built**, following the pattern `SleeperMarketProvider` already establishes
+for a second upstream source:
+
+- A `ConsensusSignal` domain model (`rank: int | None`, `source: str`) alongside the existing
+  `MarketSignal` on `Player` (`domain/models.py`) — frozen, optional, vendor-agnostic.
+- A `ConsensusRankProvider`, resolved through the same `providers/identity.py` machinery already
+  reconciling ESPN IDs against Sleeper's, so a third vocabulary doesn't need its own matcher.
+- An `enrich_with_consensus` step in `mcp/_shared.py`, mirroring `enrich_with_market`.
+- Surfaced in `compare_players` and `find_waiver_targets` (`mcp/tools_roster.py`) as a disagreement
+  flag only — shown when ESPN's ordering and consensus rank disagree — never blended into the VOR
+  score itself. `valuation.py` already establishes the principle for the market-sentiment nudge:
+  a soft signal may act as a tiebreaker within a few percent, never overturn a real projection
+  gap. Consensus rank should follow the same rule rather than get its own weighting scheme.
