@@ -40,7 +40,7 @@ tool surface against a committed fixture league. None of it is written by hand.
 No ESPN account, no credentials, no network beyond PyPI:
 
 ```bash
-git clone https://github.com/jeremylachowicz/fantasyFootballMCP
+git clone https://github.com/jeremylach2/fantasyFootballMCP
 cd fantasyFootballMCP
 uv sync
 uv run poe demo
