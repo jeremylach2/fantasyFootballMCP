@@ -31,3 +31,9 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel CLI project link (contains org/project IDs, not secrets, but local-only)
+.vercel/
+
+.vercel
+.env*

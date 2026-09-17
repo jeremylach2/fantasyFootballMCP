@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1
+#
+# Identical to ../Dockerfile except for this header. Vercel Functions' container-image support
+# (docs: vercel.com/docs/functions/container-images) only auto-detects a file named exactly
+# `Dockerfile.vercel` at the project root, so the Render-oriented `Dockerfile` can't double as
+# both. Keep the two in sync by hand if the server's startup command ever changes.
+#
+# Streamable-HTTP deployment image. stdio clients (Claude Desktop/Code) run the server locally
+# via `uvx ffmcp` or `uv run ffmcp` instead, per the README's Quickstart section. This image is
+# for the HTTP transport only.
+#
+# Live mode (a real league) over HTTP additionally requires FFMCP_AUTH_TOKEN — the server
+# refuses to start without one, since an open endpoint would let anyone who finds the URL read
+# the league. Demo mode needs none: it only ever serves synthetic fixtures.
+
+FROM python:3.13-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:0.10.2 /uv /uvx /bin/
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
+
+WORKDIR /app
+
+# Dependencies first, in their own layer, before the source changes underneath them.
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-install-project --no-dev
+
+COPY src ./src
+COPY README.md ./
+COPY tests/fixtures ./tests/fixtures
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
+
+FROM python:3.13-slim
+
+RUN groupadd --system ffmcp && useradd --system --gid ffmcp --create-home ffmcp
+
+WORKDIR /app
+COPY --from=builder --chown=ffmcp:ffmcp /app /app
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
+
+USER ffmcp
+
+EXPOSE 8000
+
+# Vercel Functions running container images default to port 80 and read PORT from project
+# settings if overridden (docs: vercel.com/docs/functions/container-images#port-resolution).
+# ${PORT:-8000} covers both that and a plain local `docker run`, same as the Render image.
+ENTRYPOINT ["/bin/sh", "-c", "exec ffmcp --transport streamable-http --host 0.0.0.0 --port ${PORT:-8000}"]
