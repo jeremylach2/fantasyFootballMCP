@@ -94,6 +94,7 @@ def register_find_trades(mcp: MCPServer) -> None:
             lines = [
                 render_trade_line(
                     state.team(evaluation.offer.partner_team_id).name,
+                    evaluation.offer.partner_team_id,
                     evaluation.offer.give,
                     evaluation.offer.get,
                     evaluation.my_value_delta,
@@ -113,7 +114,11 @@ def register_find_trades(mcp: MCPServer) -> None:
 def register_evaluate_trade(mcp: MCPServer) -> None:
     @mcp.tool(
         title="Evaluate Trade",
-        description="Evaluate a specific proposed trade from both sides.",
+        description=(
+            "Evaluate a specific proposed trade from both sides. partner_team_id is the "
+            "numeric team_id shown in league_standings' ID column or find_trades' '(id N)' "
+            "suffix — never guess it from standings rank or roster position."
+        ),
         annotations=_READ_ONLY,
     )
     async def evaluate_trade(

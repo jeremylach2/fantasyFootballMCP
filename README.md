@@ -278,13 +278,13 @@ table, carrying both channels is close to double cost for no gain.
 | `optimize_lineup` | - | 366 | 127,618 | ~31,904 |
 | `analyze_matchup` | compact | 47 | 127,618 | ~31,904 |
 | `analyze_matchup` | standard | 64 | 127,618 | ~31,904 |
-| `find_trades` | - | 164 | 127,618 | ~31,904 |
+| `find_trades` | - | 173 | 127,618 | ~31,904 |
 | `evaluate_trade` | - | 48 | 127,618 | ~31,904 |
 | `find_waiver_targets` | compact | 62 | 127,618 | ~31,904 |
 | `find_waiver_targets` | standard | 76 | 127,618 | ~31,904 |
 | `find_waiver_targets` | full | 84 | 127,618 | ~31,904 |
 | `simulate_season` | - | 136 | 127,618 | ~31,904 |
-| `league_standings` | compact | 159 | 127,618 | ~31,904 |
+| `league_standings` | compact | 170 | 127,618 | ~31,904 |
 | `player_report` | - | 44 | 127,618 | ~31,904 |
 | `compare_players` | - | 36 | 127,618 | ~31,904 |
 

@@ -50,7 +50,11 @@ def register_simulate_season(mcp: MCPServer) -> None:
 def register_league_standings(mcp: MCPServer) -> None:
     @mcp.tool(
         title="League Standings",
-        description="Show standings with playoff odds and strength of schedule.",
+        description=(
+            "Show standings with playoff odds and strength of schedule. The ID column is each "
+            "team's team_id, needed by evaluate_trade's partner_team_id — do not guess it from "
+            "rank position, which reflects record, not id."
+        ),
         annotations=_READ_ONLY,
         structured_output=False,
     )

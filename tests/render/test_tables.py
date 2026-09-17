@@ -271,9 +271,9 @@ def test_render_standings_shows_sos_and_playoff_pct() -> None:
     output = render_standings(state, "compact")
 
     assert output == (
-        "RK  TEAM           W-L    PF      PA      PLAYOFF%  SOS\n"
-        "1   Team Alpha     3-0    300.0   250.0   90.0%     0.0%\n"
-        "2   Team Bravo     0-3    250.0   300.0   10.0%     100.0%"
+        "RK  ID  TEAM           W-L    PF      PA      PLAYOFF%  SOS\n"
+        "1   1   Team Alpha     3-0    300.0   250.0   90.0%     0.0%\n"
+        "2   2   Team Bravo     0-3    250.0   300.0   10.0%     100.0%"
     )
 
 
@@ -410,9 +410,9 @@ def test_render_trade_line_formats_both_value_deltas_in_the_same_unit() -> None:
     cannot read as lopsided just because it mixes a percentage with a point figure."""
     give = (_player(1, "Josh Allen", "QB", "BUF", 22.0),)
     get = (_player(2, "Saquon Barkley", "RB", "PHI", 18.0),)
-    line = render_trade_line("Team Bravo", give, get, 3.1, -1.5, 4.2, "Upgrades RB.")
+    line = render_trade_line("Team Bravo", 2, give, get, 3.1, -1.5, 4.2, "Upgrades RB.")
     assert line == (
-        "Team Bravo: give J. Allen / get S. Barkley — "
+        "Team Bravo (id 2): give J. Allen / get S. Barkley — "
         "me +3.1pts, them +-1.5pts, +4.2% odds — Upgrades RB."
     )
 
@@ -420,9 +420,10 @@ def test_render_trade_line_formats_both_value_deltas_in_the_same_unit() -> None:
 def test_render_trade_line_omits_odds_when_not_simulated() -> None:
     give = (_player(1, "Josh Allen", "QB", "BUF", 22.0),)
     get = (_player(2, "Saquon Barkley", "RB", "PHI", 18.0),)
-    line = render_trade_line("Team Bravo", give, get, 3.1, 2.0, None, "Upgrades RB.")
+    line = render_trade_line("Team Bravo", 2, give, get, 3.1, 2.0, None, "Upgrades RB.")
     assert line == (
-        "Team Bravo: give J. Allen / get S. Barkley — me +3.1pts, them +2.0pts — Upgrades RB."
+        "Team Bravo (id 2): give J. Allen / get S. Barkley — "
+        "me +3.1pts, them +2.0pts — Upgrades RB."
     )
 
 

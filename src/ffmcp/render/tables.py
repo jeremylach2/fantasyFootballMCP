@@ -258,8 +258,8 @@ def render_waiver_targets(
 # league_standings
 # ---------------------------------------------------------------------------
 
-_STANDINGS_HEADERS = ("RK", "TEAM", "W-L", "PF", "PA", "PLAYOFF%", "SOS")
-_STANDINGS_WIDTHS = (3, 14, 6, 7, 7, 9, 6)
+_STANDINGS_HEADERS = ("RK", "ID", "TEAM", "W-L", "PF", "PA", "PLAYOFF%", "SOS")
+_STANDINGS_WIDTHS = (3, 3, 14, 6, 7, 7, 9, 6)
 
 
 def _week_in_progress_note(state: LeagueState) -> str | None:
@@ -284,7 +284,13 @@ def render_standings(state: LeagueState, detail: Detail) -> str:
     """``league_standings``. ``PLAYOFF%`` stands in for ESPN's "power ranking": it is the one
     forward-looking team-strength number this server's domain models actually carry. There is
     no ``power_score`` field; that column, as originally specified, was dropped rather than
-    faked."""
+    faked.
+
+    ``ID`` is ``Team.team_id``, distinct from ``RK`` (rank by record). It is the only place a
+    caller can read a team's id from prose rather than guess it from rank position: tools like
+    ``evaluate_trade`` take a numeric ``partner_team_id``, and rank and id agree only when the
+    standings happen to be sorted by id.
+    """
     teams = sorted(state.teams, key=lambda team: team.standing)
     rows = []
     for team in teams:
@@ -292,6 +298,7 @@ def render_standings(state: LeagueState, detail: Detail) -> str:
         rows.append(
             [
                 str(team.standing),
+                str(team.team_id),
                 team.name[:14],
                 f"{team.wins}-{team.losses}" + (f"-{team.ties}" if team.ties else ""),
                 f"{team.points_for:.1f}",
@@ -392,6 +399,7 @@ def render_matchup(
 
 def render_trade_line(
     partner_name: str,
+    partner_team_id: int,
     give: Sequence[Player],
     get: Sequence[Player],
     my_value_delta: float,
@@ -401,12 +409,16 @@ def render_trade_line(
 ) -> str:
     """One trade, both sides' gains in the same unit (points). Win-probability is real signal
     too, so it stays, as a secondary figure, not the only one shown for my side.
+
+    ``partner_team_id`` is printed alongside the name so a suggested offer can be handed
+    straight to ``evaluate_trade`` (which takes ``partner_team_id``, not a name) without a
+    separate ``league_standings`` lookup to find it.
     """
     give_names = ", ".join(short_name(p.name, 14) for p in give)
     get_names = ", ".join(short_name(p.name, 14) for p in get)
     odds = f", {my_odds_delta:+.1f}% odds" if my_odds_delta is not None else ""
     return (
-        f"{partner_name}: give {give_names} / get {get_names} — "
+        f"{partner_name} (id {partner_team_id}): give {give_names} / get {get_names} — "
         f"me +{my_value_delta:.1f}pts, them +{partner_value_delta:.1f}pts{odds} — {rationale}"
     )
 
