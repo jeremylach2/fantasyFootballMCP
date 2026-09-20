@@ -32,6 +32,8 @@ class FakePlayer:
         injured: bool = False,
         injury_status: str | None = None,
         stats: dict[int, dict[str, Any]] | None = None,
+        percent_owned: float = -1,
+        percent_started: float = -1,
     ) -> None:
         self.playerId = player_id
         self.name = name
@@ -42,6 +44,10 @@ class FakePlayer:
         self.injured = injured
         self.injuryStatus = injury_status
         self.stats = stats or {}
+        # espn-api's real Player always sets these, defaulting to -1 (see
+        # ffmcp.providers.espn._map_market_signal) rather than omitting them.
+        self.percent_owned = percent_owned
+        self.percent_started = percent_started
 
 
 class FakeTeam:
@@ -77,8 +83,38 @@ class FakeBoxScore:
         self.is_playoff = False
 
 
+class FakeTeamRef:
+    """Stands in for the ``Team`` objects ``League.scoreboard()`` attaches to a matchup."""
+
+    def __init__(self, team_id: int) -> None:
+        self.team_id = team_id
+
+
+class FakeScheduledMatchup:
+    """Stands in for ``espn_api.football.matchup.Matchup`` as returned by ``scoreboard()``.
+    ``home_team``/``away_team`` are absent entirely (not ``None``) for a bye, matching the real
+    class, which only assigns them inside a loop that runs when a team actually matches."""
+
+    def __init__(self, home_team_id: int | None, away_team_id: int | None) -> None:
+        if home_team_id is not None:
+            self.home_team = FakeTeamRef(home_team_id)
+        if away_team_id is not None:
+            self.away_team = FakeTeamRef(away_team_id)
+        self.home_score = 0.0
+        self.away_score = 0.0
+        self.is_playoff = False
+
+
 QB = FakePlayer(
-    1, "QB One", "QB", ["QB"], "BUF", lineup_slot="QB", stats={3: {"projected_points": 20.5}}
+    1,
+    "QB One",
+    "QB",
+    ["QB"],
+    "BUF",
+    lineup_slot="QB",
+    stats={3: {"projected_points": 20.5}},
+    percent_owned=87.3,
+    percent_started=71.2,
 )
 BENCH_RB = FakePlayer(2, "RB One", "RB", ["RB", "RB/WR/TE"], "SF", lineup_slot="BE")
 IR_WR = FakePlayer(
@@ -96,6 +132,11 @@ class FakeLeague:
 
     def box_scores(self, week: int) -> list[FakeBoxScore]:
         return [FakeBoxScore(1, 2)]
+
+    def scoreboard(self, week: int) -> list[FakeScheduledMatchup]:
+        # Deliberately a different pairing from box_scores(), so a test can tell which one
+        # get_matchups actually called.
+        return [FakeScheduledMatchup(1, 3)]
 
     def free_agents(self, week: int, size: int, position: str | None) -> list[FakePlayer]:
         agents = [QB]
@@ -144,6 +185,37 @@ async def test_get_matchups_maps_team_ids_not_team_objects() -> None:
     assert matchups[0].away_team_id == 2
 
 
+async def test_get_matchups_for_a_played_week_uses_box_scores() -> None:
+    # week == current_week (3): box_scores() is trustworthy here.
+    matchups = await _provider().get_matchups(3)
+    assert (matchups[0].home_team_id, matchups[0].away_team_id) == (1, 2)
+    assert matchups[0].home_projected == 105.0
+
+
+async def test_get_matchups_for_a_future_week_uses_scoreboard_not_box_scores() -> None:
+    # week > current_week (3): box_scores() silently returns the current week's pairing
+    # relabeled, so get_matchups must fall back to scoreboard() instead. FakeLeague's two
+    # methods return different pairings precisely so this distinguishes them.
+    matchups = await _provider().get_matchups(6)
+    assert (matchups[0].home_team_id, matchups[0].away_team_id) == (1, 3)
+    assert matchups[0].week == 6
+    assert matchups[0].home_projected == 0.0
+
+
+async def test_get_matchups_for_a_future_bye_has_no_opponent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # scoreboard() only sets home_team/away_team when a team actually matched; a bye leaves
+    # the attribute absent rather than None, and _map_scheduled_matchup must handle that
+    # rather than raising AttributeError.
+    monkeypatch.setattr(
+        FakeLeague, "scoreboard", lambda self, week: [FakeScheduledMatchup(1, None)]
+    )
+    matchups = await _provider().get_matchups(6)
+    assert matchups[0].home_team_id == 1
+    assert matchups[0].away_team_id is None
+
+
 async def test_missing_season_is_resolved_lazily_on_first_use() -> None:
     calls = 0
 
@@ -163,6 +235,23 @@ async def test_missing_season_is_resolved_lazily_on_first_use() -> None:
 
     await provider.get_current_week()
     assert calls == 1  # resolved once, then reused
+
+
+async def test_get_teams_maps_espn_ownership_into_market_signal() -> None:
+    teams = await _provider().get_teams()
+    starter = teams[0].roster.slots[0].player
+    assert starter is not None
+    assert starter.market is not None
+    assert starter.market.percent_owned == 87.3
+    assert starter.market.percent_started == 71.2
+    assert starter.market.trending_adds is None  # ESPN has no notion of this; Sleeper adds it
+
+
+async def test_get_teams_leaves_market_none_when_espn_reports_no_ownership_data() -> None:
+    # BENCH_RB uses the FakePlayer default of -1, espn-api's sentinel for "no reading" (see
+    # ffmcp.providers.espn._map_market_signal): it must not be surfaced as a real 0% or -1%.
+    teams = await _provider().get_teams()
+    assert teams[0].roster.bench[0].market is None
 
 
 async def test_get_free_agents_filters_by_position() -> None:

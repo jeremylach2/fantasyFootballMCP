@@ -148,7 +148,14 @@ async def player_pool(ctx: object, teams: Sequence[Team], week: int) -> list[Pla
 async def enrich_with_market(ctx: object, players: Sequence[Player]) -> list[Player]:
     """Attach a ``MarketSignal`` to each player, via the market provider's own identity
     resolution. Cross-provider, so it happens here rather than inside either provider: an ESPN
-    roster fetch has no reason to know Sleeper exists (docs/architecture.md §3)."""
+    roster fetch has no reason to know Sleeper exists (docs/architecture.md §3).
+
+    ``player.market`` may already carry ``percent_owned``/``percent_started`` set by the league
+    provider itself (``providers.espn._map_market_signal``: this league's own ESPN ownership
+    stats, unrelated to Sleeper). The market provider's signal is merged on top rather than
+    replacing it outright, so Sleeper's ``trending_adds`` doesn't wipe out ESPN's ownership
+    reading, and vice versa.
+    """
     app = app_context(ctx)
 
     async def _one(player: Player) -> Player:
@@ -158,7 +165,20 @@ async def enrich_with_market(ctx: object, players: Sequence[Player]) -> list[Pla
             position=player.position,
             pro_team=player.pro_team,
         )
-        return player if signal is None else player.model_copy(update={"market": signal})
+        if signal is None:
+            return player
+        if player.market is not None:
+            signal = signal.model_copy(
+                update={
+                    "percent_owned": signal.percent_owned
+                    if signal.percent_owned is not None
+                    else player.market.percent_owned,
+                    "percent_started": signal.percent_started
+                    if signal.percent_started is not None
+                    else player.market.percent_started,
+                }
+            )
+        return player.model_copy(update={"market": signal})
 
     return list(await asyncio.gather(*(_one(player) for player in players)))
 

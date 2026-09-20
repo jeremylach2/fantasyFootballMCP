@@ -68,11 +68,30 @@ Startup must never block on network. The `lifespan` handler creates the httpx2 c
 cache but does not warm them. A server that hangs for twelve seconds before answering
 `tools/list` is a bad demo.
 
+**Gap, stated rather than hidden:** the differentiated TTLs in the table above describe what
+`SleeperMarketProvider` actually does, but `EspnLeagueProvider` does not use the shared
+`Cache` at all. It holds one `espn_api.League` handle behind a single blanket
+`_LEAGUE_TTL_SECONDS` (600s), so league settings, rosters and live scores all refresh together
+on one timer rather than on the four separate schedules the table above implies. Rule 3 in §4
+below ("stale beats absent") is likewise unimplemented on the ESPN path: `Cache.get_stale()`
+and `UpstreamUnavailable(stale_served=...)` both exist, but no call site in `providers/espn.py`
+uses either, so an ESPN hiccup today is a hard error rather than a stale-and-say-so response.
+Wiring the shared `Cache` into `EspnLeagueProvider` per-endpoint, with the TTLs the table already
+documents, would close both gaps at once.
+
 ### ID mapping
 ESPN and Sleeper disagree about player identity. Build one `providers/identity.py` resolver:
 match on normalized `(name, position, pro_team)`, keep a small committed override table for the
 handful that fail, and expose `unresolved` as a diagnostic count rather than a crash. Never let
 an identity miss take down a tool. Degrade to "no market signal for this player."
+
+Team defenses are not "the handful that fail" — they are *all* of them, on every league, and the
+override table is the wrong tool for it: ESPN's D/ST position (`"D/ST"`, name `"Falcons D/ST"`)
+and Sleeper's (`"DEF"`, name `"Atlanta Falcons"`) share no token at all, so no normalization of
+either field would ever line them up. `IdentityIndex` resolves a defense on the one thing both
+providers do agree on instead: the pro-team abbreviation (Sleeper's `player_id` for a defense
+literally *is* that abbreviation), aliasing the single case they spell differently
+(`WSH` on ESPN, `WAS` on Sleeper).
 
 ## 4. Error model
 

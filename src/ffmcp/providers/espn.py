@@ -6,6 +6,17 @@ One notable trap: ``BoxScore.home_team``/``away_team`` are team **ids** (``int``
 completed week but full ``Team`` instances for the current/in-progress week (``None`` either
 way for a bye). ``_box_score_team_id`` normalizes both.
 
+A second, sharper trap: ``League.box_scores(week)`` only honors ``week`` when
+``week <= league.current_week``; internally it resolves a "matchup period" for the requested
+week solely inside that branch, and otherwise silently falls back to the *current* matchup
+period. Calling it for a future week does not error and does not raise — it returns this
+week's box scores relabeled with the future week number, which would hand every remaining-season
+tool (``simulate_season``, ``find_trades``, the ``SOS`` column) a schedule where every team
+plays this week's opponent every week for the rest of the season. ``get_matchups`` below
+therefore only uses ``box_scores`` for ``week <= current_week`` and falls back to
+``League.scoreboard(week)``, which filters on ``matchupPeriodId`` unconditionally, for any
+future week.
+
 ``espn-api`` is synchronous and does its own network I/O with ``requests``, so every call into
 it runs under ``asyncio.to_thread`` so it never blocks the event loop (docs/architecture.md §7).
 The ``League`` handle itself is expensive to build (it fetches the whole league on
@@ -24,11 +35,13 @@ from espn_api.football import League
 from espn_api.football import Player as EspnPlayer
 from espn_api.football import Team as EspnTeam
 from espn_api.football.box_score import BoxScore
+from espn_api.football.matchup import Matchup as EspnScheduledMatchup
 from espn_api.football.settings import Settings as EspnSettings
 from espn_api.requests.espn_requests import ESPNAccessDenied, ESPNInvalidLeague, ESPNUnknownError
 
 from ffmcp.domain.models import (
     LeagueSettings,
+    MarketSignal,
     Matchup,
     Player,
     Projection,
@@ -87,10 +100,14 @@ class EspnLeagueProvider:
     async def get_matchups(self, week: int) -> list[Matchup]:
         league = await self._handle()
         try:
-            box_scores: list[BoxScore] = await asyncio.to_thread(league.box_scores, week)
+            if week <= int(league.current_week):
+                box_scores: list[BoxScore] = await asyncio.to_thread(league.box_scores, week)
+                return [_map_matchup(week, bs) for bs in box_scores]
+            # See the module docstring: box_scores() cannot be trusted for a future week.
+            scheduled: list[EspnScheduledMatchup] = await asyncio.to_thread(league.scoreboard, week)
         except _UpstreamErrors as exc:
             raise UpstreamUnavailable("ESPN") from exc
-        return [_map_matchup(week, bs) for bs in box_scores]
+        return [_map_scheduled_matchup(week, m) for m in scheduled]
 
     async def get_free_agents(
         self, week: int, *, size: int = 50, position: str | None = None
@@ -152,6 +169,24 @@ def _map_settings(league_id: int, season: int, settings: EspnSettings) -> League
     )
 
 
+def _map_market_signal(player: EspnPlayer) -> MarketSignal | None:
+    """ESPN's own ownership stats for *this* league, not Sleeper's cross-league signal.
+
+    ``espn-api`` reports a field it has no data for as ``-1`` (see the installed package's
+    ``Player.__init__``, which rounds ``.get(..., -1)``) rather than omitting it, so ``-1`` is
+    treated as "no reading" here rather than surfaced as a real percentage. ``None`` is
+    returned rather than an empty ``MarketSignal`` when neither field has a reading, so
+    ``player.market`` stays ``None`` until something actually attaches to it.
+    """
+    owned = getattr(player, "percent_owned", None)
+    started = getattr(player, "percent_started", None)
+    owned = float(owned) if owned is not None and owned >= 0 else None
+    started = float(started) if started is not None and started >= 0 else None
+    if owned is None and started is None:
+        return None
+    return MarketSignal(percent_owned=owned, percent_started=started)
+
+
 def _map_player(player: EspnPlayer, *, week: int) -> Player:
     week_stats = player.stats.get(week, {})
     proj_points = week_stats.get("projected_points")
@@ -168,6 +203,7 @@ def _map_player(player: EspnPlayer, *, week: int) -> Player:
         injured=bool(player.injured),
         injury_status=player.injuryStatus or None,
         projection=projection,
+        market=_map_market_signal(player),
         live_points=float(live_points) if live_points is not None else None,
     )
 
@@ -222,4 +258,29 @@ def _map_matchup(week: int, box_score: BoxScore) -> Matchup:
         home_projected=float(box_score.home_projected),
         away_projected=float(box_score.away_projected),
         is_playoff=bool(box_score.is_playoff),
+    )
+
+
+def _map_scheduled_matchup(week: int, matchup: EspnScheduledMatchup) -> Matchup:
+    """A not-yet-played week's pairing, from ``League.scoreboard(week)`` rather than
+    ``box_scores`` (see the module docstring for why). ``home_team``/``away_team`` are set by
+    ``scoreboard()`` only when a team actually matched (absent, not ``None``, for a bye), so
+    both reads go through ``getattr``.
+
+    Projected totals are 0.0: ``scoreboard()``'s ``Matchup`` carries no box-score-derived
+    projection, and nothing downstream needs one for a week that has not been played yet
+    (``domain.simulate`` draws its own scoring distribution from each roster's optimal lineup,
+    not from ESPN's per-matchup projection).
+    """
+    home_team = getattr(matchup, "home_team", None)
+    away_team = getattr(matchup, "away_team", None)
+    return Matchup(
+        week=week,
+        home_team_id=int(home_team.team_id) if home_team is not None else None,
+        away_team_id=int(away_team.team_id) if away_team is not None else None,
+        home_score=float(matchup.home_score),
+        away_score=float(matchup.away_score),
+        home_projected=0.0,
+        away_projected=0.0,
+        is_playoff=bool(matchup.is_playoff),
     )
