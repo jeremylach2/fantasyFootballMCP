@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
 
+from ffmcp.domain.league_intel import manager_reports
 from ffmcp.domain.models import LeagueState, Player, TradeOffer
 from ffmcp.domain.trades import (
     apply_offer,
@@ -22,9 +23,11 @@ from ffmcp.errors import TradePartnerAmbiguous
 from ffmcp.mcp._shared import (
     adapt_errors,
     find_players_by_name,
+    load_history,
     load_league_state,
     require_single_match,
     resolve_my_team_id,
+    week_weights_by_team,
 )
 from ffmcp.render.detail import TradeVerdict, build_trade_verdict, render_positional_impact
 from ffmcp.render.tables import render_trade_line, render_trades
@@ -52,10 +55,20 @@ def _infer_partner(state: LeagueState, my_team_id: int, get_names: Sequence[str]
     raise TradePartnerAmbiguous()
 
 
+def _partner_label(name: str, tags: Sequence[str]) -> str:
+    """A partner's name with what the league's history says about how they manage. An
+    unlucky or inattentive manager's record understates their roster, which is exactly the
+    manager most likely to accept a deal that looks like a fix."""
+    return f"{name} [{', '.join(tags)}]" if tags else name
+
+
 def register_find_trades(mcp: MCPServer) -> None:
     @mcp.tool(
         title="Find Trades",
-        description="Suggest trades that help my roster and are plausibly accepted.",
+        description=(
+            "Suggest trades that help my roster and are plausibly accepted, priced over the "
+            "rest of the season (byes and playoff weeks included), with each partner's tendencies."
+        ),
         annotations=_READ_ONLY,
         structured_output=False,
     )
@@ -71,6 +84,9 @@ def register_find_trades(mcp: MCPServer) -> None:
             capped = min(max(1, max_results), _MAX_RESULTS)
             slots = state.settings.starting_slots
             my_roster = list(state.team(my_team_id).roster.players)
+            weights = week_weights_by_team(state)
+            history, _ = await load_history(ctx)
+            tags = {r.team_id: r.tags for r in manager_reports(state, history)} if history else {}
             loop = asyncio.get_running_loop()
 
             def report(done: int, total: int) -> None:
@@ -89,11 +105,15 @@ def register_find_trades(mcp: MCPServer) -> None:
                     partner_team_id=partner_team_id,
                     positions_wanted=positions_wanted,
                     progress=report,
+                    week_weights=weights,
                 )
             )
             lines = [
                 render_trade_line(
-                    state.team(evaluation.offer.partner_team_id).name,
+                    _partner_label(
+                        state.team(evaluation.offer.partner_team_id).name,
+                        tags.get(evaluation.offer.partner_team_id, ()),
+                    ),
                     evaluation.offer.partner_team_id,
                     evaluation.offer.give,
                     evaluation.offer.get,
@@ -148,8 +168,15 @@ def register_evaluate_trade(mcp: MCPServer) -> None:
 
             slots = state.settings.starting_slots
             weeks_remaining = max(1, state.weeks_remaining)
+            weights = week_weights_by_team(state)
             evaluation = evaluate(
-                offer, my_team.roster, partner_team.roster, slots, weeks_remaining=weeks_remaining
+                offer,
+                my_team.roster,
+                partner_team.roster,
+                slots,
+                weeks_remaining=weeks_remaining,
+                my_weeks=weights.get(my_team_id),
+                their_weeks=weights.get(resolved_partner_id),
             )
             evaluation = with_playoff_odds(state, my_team_id, evaluation, slots)
             my_roster = list(my_team.roster.players)

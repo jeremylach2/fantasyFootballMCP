@@ -35,7 +35,8 @@ TOUR: tuple[tuple[str, str, dict[str, object]], ...] = (
         {"names": ["Dominic Okafor", "Elijah Villanueva"]},
     ),
     ("Who should I pick up? -> find_waiver_targets", "find_waiver_targets", {}),
-    ("One player, in depth", "player_report", {"name": "Caleb Fairbanks"}),
+    ("Who is due to regress? -> buy_low_sell_high", "buy_low_sell_high", {}),
+    ("One player, in depth", "player_report", {"name": "Damon Rios"}),
     ("Should I make this trade? -> find_trades", "find_trades", {}),
     (
         "Evaluate a specific offer -> evaluate_trade",
@@ -52,6 +53,8 @@ TOUR: tuple[tuple[str, str, dict[str, object]], ...] = (
         {"n_sims": 2000},
     ),
     ("League standings", "league_standings", {}),
+    ("Who is actually good? -> power_rankings", "power_rankings", {}),
+    ("How far should I trust the projections? -> projection_accuracy", "projection_accuracy", {}),
 )
 
 

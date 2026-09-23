@@ -8,20 +8,31 @@ reduction (docs/architecture.md §3).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 import httpx2
 
-from ffmcp.domain.models import MarketSignal
+from ffmcp.domain.models import MarketSignal, Player
 from ffmcp.errors import UpstreamUnavailable
 from ffmcp.providers.cache import Cache
 from ffmcp.providers.identity import IdentityIndex
 
 BASE_URL = "https://api.sleeper.app/v1"
+PROJECTIONS_URL = "https://api.sleeper.app/projections/nfl"
+"""Not under ``/v1``: Sleeper serves projections from an older, undocumented path. It is what
+their own app reads, and it has been stable for years, but it carries no compatibility promise,
+so every caller treats a failure here as "no second opinion", never as an error."""
 
 STATE_TTL = 3_600
 PLAYERS_TTL = 86_400
 TRENDING_TTL = 900
+PROJECTIONS_TTL = 3_600
+PAST_PROJECTIONS_TTL = 7 * 86_400
+
+_PROJECTED_POSITIONS = ("QB", "RB", "WR", "TE", "K", "DEF")
+"""Requested explicitly: unfiltered, the payload is 5.7 MB, mostly defensive players no
+fantasy lineup here can start. Filtered, it is about 2 MB."""
 
 
 class SleeperMarketProvider:
@@ -63,6 +74,45 @@ class SleeperMarketProvider:
         trending = await self.get_trending_adds()
         return MarketSignal(trending_adds=trending.get(sleeper_id))
 
+    async def get_alt_projections(
+        self, week: int, players: Sequence[Player], *, reception_points: float = 1.0
+    ) -> dict[int, float]:
+        """Sleeper's projection for each of ``players`` it can identify, keyed by ESPN id.
+
+        Sleeper publishes standard and PPR points; a league's own reception scoring is an exact
+        linear interpolation between the two (they differ only by receptions).
+        """
+        season = await self.get_current_season()
+        current = await self.get_current_week()
+        ttl = PAST_PROJECTIONS_TTL if week < current else PROJECTIONS_TTL
+        key = f"v1:sleeper:projections:{season}:{week}"
+
+        async def fetch() -> dict[str, list[float]]:
+            positions = "&".join(f"position[]={position}" for position in _PROJECTED_POSITIONS)
+            rows = await self._get_json_url(
+                f"{PROJECTIONS_URL}/{season}/{week}?season_type=regular&{positions}"
+            )
+            reduced: dict[str, list[float]] = {}
+            for row in rows:
+                stats = row.get("stats") or {}
+                standard, ppr = stats.get("pts_std"), stats.get("pts_ppr")
+                if standard is not None and ppr is not None:
+                    reduced[str(row["player_id"])] = [float(standard), float(ppr)]
+            return reduced
+
+        by_sleeper_id = await self._cache.get_or_fetch(key, ttl, fetch)
+        identity = await self._get_identity()
+        result: dict[int, float] = {}
+        for player in players:
+            sleeper_id = identity.resolve(
+                player.player_id, player.name, player.position, player.pro_team
+            )
+            points = by_sleeper_id.get(sleeper_id) if sleeper_id is not None else None
+            if points is not None:
+                standard, ppr = points
+                result[player.player_id] = standard + reception_points * (ppr - standard)
+        return result
+
     async def _get_identity(self) -> IdentityIndex:
         if self._identity is None:
             index = await self._cache.get_or_fetch(
@@ -89,8 +139,11 @@ class SleeperMarketProvider:
         }
 
     async def _get_json(self, path: str) -> Any:
+        return await self._get_json_url(f"{BASE_URL}{path}")
+
+    async def _get_json_url(self, url: str) -> Any:
         try:
-            response = await self._client.get(f"{BASE_URL}{path}")
+            response = await self._client.get(url)
             response.raise_for_status()
         except httpx2.HTTPError as exc:
             raise UpstreamUnavailable("Sleeper") from exc

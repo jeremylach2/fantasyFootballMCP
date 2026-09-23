@@ -16,10 +16,13 @@ DOCUMENTED_ORDER = (
     "find_trades",
     "evaluate_trade",
     "find_waiver_targets",
+    "buy_low_sell_high",
     "simulate_season",
     "league_standings",
+    "power_rankings",
     "player_report",
     "compare_players",
+    "projection_accuracy",
 )
 
 

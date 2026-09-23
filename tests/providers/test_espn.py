@@ -302,3 +302,75 @@ async def test_unknown_error_raises_upstream_unavailable(monkeypatch: pytest.Mon
     monkeypatch.setattr(espn_module, "League", raise_unknown)
     with pytest.raises(UpstreamUnavailable):
         await _provider().get_current_week()
+
+
+# ---------------------------------------------------------------------------
+# Scoring, byes and history: the pure mapping helpers, fed stand-in objects.
+# ---------------------------------------------------------------------------
+
+
+def test_healthy_statuses_are_not_injury_designations() -> None:
+    assert espn_module._injury_status("ACTIVE") is None
+    assert espn_module._injury_status("NORMAL") is None
+    assert espn_module._injury_status("") is None
+    assert espn_module._injury_status("QUESTIONABLE") == "QUESTIONABLE"
+
+
+def test_reception_points_come_from_the_leagues_scoring_items() -> None:
+    from types import SimpleNamespace
+
+    def settings(items: list[dict[str, Any]] | None) -> Any:
+        raw = {} if items is None else {"scoringItems": items}
+        return SimpleNamespace(_raw_scoring_settings=raw)
+
+    assert espn_module._reception_points(settings([{"statId": 53, "points": 0.5}])) == 0.5
+    assert espn_module._reception_points(settings([{"statId": 25, "points": 6.0}])) == 0.0
+    assert espn_module._reception_points(settings(None)) == 1.0
+
+
+def test_bye_weeks_come_from_rostered_players_schedules_by_majority() -> None:
+    from types import SimpleNamespace
+
+    def player(team: str, bye: int) -> Any:
+        weeks: dict[str, dict[str, Any]] = {str(w): {} for w in range(1, 19) if w != bye}
+        return SimpleNamespace(proTeam=team, schedule=weeks)
+
+    league = SimpleNamespace(
+        teams=[
+            SimpleNamespace(roster=[player("DET", 8), player("DET", 8), player("DET", 5)]),
+            SimpleNamespace(roster=[player("CHI", 6), SimpleNamespace(proTeam="FA", schedule={})]),
+        ]
+    )
+    assert espn_module._bye_weeks_by_team(league) == {"DET": 8, "CHI": 6}
+
+
+def test_box_score_rows_carry_slot_projection_and_whether_the_game_was_played() -> None:
+    from types import SimpleNamespace
+
+    def box_player(pid: int, slot: str, *, bye: bool = False) -> Any:
+        return SimpleNamespace(
+            playerId=pid,
+            name=f"P{pid}",
+            position="WR",
+            proTeam="DET",
+            eligibleSlots=["WR", "BE"],
+            slot_position=slot,
+            projected_points=12.5,
+            points=0.0 if bye else 17.1,
+            game_played=100,
+            on_bye_week=bye,
+        )
+
+    box = SimpleNamespace(
+        home_team=1,
+        away_team=2,
+        home_lineup=[box_player(10, "WR"), box_player(11, "BE", bye=True)],
+        away_lineup=[box_player(20, "WR")],
+    )
+    rows = espn_module._box_score_rows(box)
+    assert [(r["player_id"], r["fantasy_team_id"], r["slot"], r["played"]) for r in rows] == [
+        (10, 1, "WR", True),
+        (11, 1, "BE", False),
+        (20, 2, "WR", True),
+    ]
+    assert rows[0]["projected"] == 12.5 and rows[0]["actual"] == 17.1

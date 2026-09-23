@@ -22,13 +22,25 @@ it runs under ``asyncio.to_thread`` so it never blocks the event loop (docs/arch
 The ``League`` handle itself is expensive to build (it fetches the whole league on
 construction) and is rebuilt lazily, at most every ``_LEAGUE_TTL_SECONDS``, rather than at
 ``lifespan`` startup. Startup must never touch the network (docs/architecture.md §3).
+
+A third trap, for bye weeks: ``Player.schedule`` (the player's NFL schedule, from which a bye is
+the one missing week) is populated for rostered players but comes back *empty* for free agents.
+Byes are a property of the NFL team, not the player, so they are derived once from the rostered
+players (every NFL team has someone rostered in any real league) and applied by team to
+everyone, free agents included.
+
+Completed weeks' box scores (``get_player_history``) go through the shared disk ``Cache``:
+a finished week never changes after its stat corrections settle, so it is fetched once, not on
+every tool call that wants the season's history.
 """
 
 from __future__ import annotations
 
 import asyncio
 import time
+from collections import Counter
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import requests
 from espn_api.football import League
@@ -44,18 +56,34 @@ from ffmcp.domain.models import (
     MarketSignal,
     Matchup,
     Player,
+    PlayerWeek,
     Projection,
     Roster,
     RosterSlot,
     Team,
 )
 from ffmcp.errors import CredentialsMissing, LeagueNotAccessible, UpstreamUnavailable
+from ffmcp.providers.cache import Cache
 
 _LEAGUE_TTL_SECONDS = 600  # rosters change on waivers/trades. See docs/architecture.md §3.
 _BENCH_SLOT = "BE"
 _IR_SLOT = "IR"
 
 _UpstreamErrors = (ESPNUnknownError, requests.RequestException)
+
+_HEALTHY_STATUSES = frozenset({"ACTIVE", "NORMAL"})
+"""ESPN's words for "not injured". Translated to ``None`` here, at the boundary, so no layer
+above ever mistakes a healthy player's status for an injury designation (they used to surface
+as "Active: <player> — check inactives" caveats, one per healthy starter)."""
+
+_NFL_WEEKS = range(1, 19)
+_RECEPTION_STAT_ID = 53
+"""ESPN's scoring-item id for a reception: its ``points`` is the league's PPR setting."""
+
+HISTORY_TTL_SECONDS = 7 * 86_400
+RECENT_HISTORY_TTL_SECONDS = 6 * 3_600
+"""The week that just finished still takes stat corrections for a few days, so it is re-read
+every few hours; anything older is effectively permanent."""
 
 
 class EspnLeagueProvider:
@@ -69,6 +97,7 @@ class EspnLeagueProvider:
         espn_s2: str | None,
         swid: str | None,
         resolve_season: Callable[[], Awaitable[int]] | None = None,
+        cache: Cache | None = None,
     ) -> None:
         """``season=None`` defers to ``resolve_season`` (FFMCP_SEASON's "current" default,
         docs/architecture.md §5) the first time a league handle is actually needed, rather
@@ -82,6 +111,8 @@ class EspnLeagueProvider:
         self._league: League | None = None
         self._league_built_at: float = 0.0
         self._lock = asyncio.Lock()
+        self._cache = cache
+        self._bye_weeks: dict[str, int] = {}
 
     async def get_current_week(self) -> int:
         league = await self._handle()
@@ -95,7 +126,7 @@ class EspnLeagueProvider:
     async def get_teams(self) -> list[Team]:
         league = await self._handle()
         week = int(league.current_week)
-        return [_map_team(t, week=week) for t in league.teams]
+        return [_map_team(t, week=week, byes=self._bye_weeks) for t in league.teams]
 
     async def get_matchups(self, week: int) -> list[Matchup]:
         league = await self._handle()
@@ -119,7 +150,39 @@ class EspnLeagueProvider:
             )
         except _UpstreamErrors as exc:
             raise UpstreamUnavailable("ESPN") from exc
-        return [_map_player(p, week=week) for p in players]
+        return [_map_player(p, week=week, byes=self._bye_weeks) for p in players]
+
+    async def get_player_history(self) -> list[PlayerWeek]:
+        """Every rostered player-week of the season's completed weeks, starters and bench.
+
+        One ``box_scores`` call per week, concurrently, each cached (see the module docstring).
+        """
+        league = await self._handle()
+        current = int(league.current_week)
+        assert self._season is not None
+        season = self._season
+
+        async def one_week(week: int) -> list[dict[str, Any]]:
+            async def fetch() -> list[dict[str, Any]]:
+                try:
+                    box_scores: list[BoxScore] = await asyncio.to_thread(league.box_scores, week)
+                except _UpstreamErrors as exc:
+                    raise UpstreamUnavailable("ESPN") from exc
+                return [row for bs in box_scores for row in _box_score_rows(bs)]
+
+            if self._cache is None:
+                return await fetch()
+            ttl = RECENT_HISTORY_TTL_SECONDS if week == current - 1 else HISTORY_TTL_SECONDS
+            key = f"v1:espn:history:{self._league_id}:{season}:{week}"
+            return await self._cache.get_or_fetch(key, ttl, fetch)
+
+        weeks = range(1, current)
+        per_week = await asyncio.gather(*(one_week(week) for week in weeks))
+        return [
+            PlayerWeek(season=season, week=week, **row)
+            for week, rows in zip(weeks, per_week, strict=True)
+            for row in rows
+        ]
 
     async def _handle(self) -> League:
         async with self._lock:
@@ -134,6 +197,7 @@ class EspnLeagueProvider:
             if stale:
                 self._league = await asyncio.to_thread(self._build_league)
                 self._league_built_at = now
+                self._bye_weeks = _bye_weeks_by_team(self._league)
             assert self._league is not None
             return self._league
 
@@ -166,7 +230,38 @@ def _map_settings(league_id: int, season: int, settings: EspnSettings) -> League
         reg_season_weeks=int(settings.reg_season_count),
         slot_counts=dict(settings.position_slot_counts),
         scoring_type=settings.scoring_type,
+        reception_points=_reception_points(settings),
+        playoff_round_weeks=int(getattr(settings, "playoff_matchup_period_length", 1) or 1),
     )
+
+
+def _reception_points(settings: EspnSettings) -> float:
+    """Points per reception, read off the league's raw scoring items. 0.0 when the league
+    has no reception item at all, which is how ESPN represents standard scoring."""
+    raw = getattr(settings, "_raw_scoring_settings", None) or {}
+    items = raw.get("scoringItems")
+    if not items:
+        return 1.0  # no scoring data at all: assume ESPN's default, PPR
+    for item in items:
+        if item.get("statId") == _RECEPTION_STAT_ID:
+            return float(item.get("points", 0.0))
+    return 0.0
+
+
+def _bye_weeks_by_team(league: League) -> dict[str, int]:
+    """``{pro_team: bye week}``, from the NFL schedules of rostered players (see the module
+    docstring for why free agents cannot supply their own). A team's bye is the one week of
+    the NFL season its schedule skips; the most common answer across its players wins, so one
+    malformed schedule cannot mislabel a whole team."""
+    votes: dict[str, Counter[int]] = {}
+    for team in league.teams:
+        for player in team.roster:
+            schedule = getattr(player, "schedule", None) or {}
+            played = {int(week) for week in schedule}
+            missing = [week for week in _NFL_WEEKS if week not in played]
+            if schedule and len(missing) == 1:
+                votes.setdefault(str(player.proTeam), Counter())[missing[0]] += 1
+    return {team: counter.most_common(1)[0][0] for team, counter in votes.items()}
 
 
 def _map_market_signal(player: EspnPlayer) -> MarketSignal | None:
@@ -187,13 +282,14 @@ def _map_market_signal(player: EspnPlayer) -> MarketSignal | None:
     return MarketSignal(percent_owned=owned, percent_started=started)
 
 
-def _map_player(player: EspnPlayer, *, week: int) -> Player:
+def _map_player(player: EspnPlayer, *, week: int, byes: dict[str, int] | None = None) -> Player:
     week_stats = player.stats.get(week, {})
     proj_points = week_stats.get("projected_points")
     projection = (
         Projection(week=week, points=float(proj_points)) if proj_points is not None else None
     )
     live_points = week_stats.get("points")
+    season_rate = getattr(player, "projected_avg_points", None)
     return Player(
         player_id=int(player.playerId),
         name=str(player.name),
@@ -201,19 +297,27 @@ def _map_player(player: EspnPlayer, *, week: int) -> Player:
         eligible_slots=tuple(str(s) for s in player.eligibleSlots),
         pro_team=str(player.proTeam),
         injured=bool(player.injured),
-        injury_status=player.injuryStatus or None,
+        injury_status=_injury_status(player.injuryStatus),
         projection=projection,
         market=_map_market_signal(player),
         live_points=float(live_points) if live_points is not None else None,
+        bye_week=(byes or {}).get(str(player.proTeam)),
+        season_rate=float(season_rate) if season_rate else None,
     )
 
 
-def _map_team(team: EspnTeam, *, week: int) -> Team:
+def _injury_status(status: str | None) -> str | None:
+    if not status or status.upper() in _HEALTHY_STATUSES:
+        return None
+    return status
+
+
+def _map_team(team: EspnTeam, *, week: int, byes: dict[str, int] | None = None) -> Team:
     starters = []
     bench = []
     ir = []
     for espn_player in team.roster:
-        mapped = _map_player(espn_player, week=week)
+        mapped = _map_player(espn_player, week=week, byes=byes)
         slot = espn_player.lineupSlot
         if slot == _BENCH_SLOT:
             bench.append(mapped)
@@ -284,3 +388,28 @@ def _map_scheduled_matchup(week: int, matchup: EspnScheduledMatchup) -> Matchup:
         away_projected=0.0,
         is_playoff=bool(matchup.is_playoff),
     )
+
+
+def _box_score_rows(box_score: BoxScore) -> list[dict[str, Any]]:
+    """Both lineups of one completed box score as plain, cacheable ``PlayerWeek`` fields
+    (everything but ``season``/``week``, which the caller knows)."""
+    rows = []
+    for side in ("home", "away"):
+        team_id = _box_score_team_id(getattr(box_score, f"{side}_team"))
+        for player in getattr(box_score, f"{side}_lineup"):
+            projected = getattr(player, "projected_points", None)
+            rows.append(
+                {
+                    "player_id": int(player.playerId),
+                    "name": str(player.name),
+                    "position": str(player.position),
+                    "pro_team": str(player.proTeam),
+                    "eligible_slots": [str(slot) for slot in player.eligibleSlots],
+                    "fantasy_team_id": team_id,
+                    "slot": str(player.slot_position),
+                    "projected": float(projected) if projected is not None else None,
+                    "actual": float(player.points or 0.0),
+                    "played": bool(player.game_played) and not bool(player.on_bye_week),
+                }
+            )
+    return rows

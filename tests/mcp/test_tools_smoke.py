@@ -25,10 +25,15 @@ CALLS: tuple[tuple[str, dict[str, object]], ...] = (
     ),
     ("find_waiver_targets", {}),
     ("find_waiver_targets", {"detail": "full"}),
+    ("buy_low_sell_high", {}),
     ("simulate_season", {"n_sims": 200}),
     ("league_standings", {}),
+    ("power_rankings", {}),
     ("player_report", {"name": "Caleb Fairbanks"}),
+    ("player_report", {"name": "Tariq Whitlock"}),
     ("compare_players", {"names": ["Dominic Okafor", "Elijah Villanueva"]}),
+    ("projection_accuracy", {}),
+    ("optimize_lineup", {"objective": "points"}),
 )
 
 

@@ -11,6 +11,7 @@ from pathlib import Path
 import httpx2
 import pytest
 
+from ffmcp.domain.models import Player
 from ffmcp.providers.cache import Cache
 from ffmcp.providers.sleeper import SleeperMarketProvider
 
@@ -29,6 +30,11 @@ PLAYERS = {
 
 TRENDING = [{"player_id": "9001", "count": 4200}]
 
+PROJECTIONS = [
+    {"player_id": "9001", "stats": {"pts_std": 18.0, "pts_ppr": 22.0}},
+    {"player_id": "9003", "stats": {"pts_std": 5.0}},  # no PPR figure: skipped, not guessed
+]
+
 
 def _handler(request: httpx2.Request) -> httpx2.Response:
     if request.url.path == "/v1/state/nfl":
@@ -37,6 +43,8 @@ def _handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(200, json=PLAYERS)
     if request.url.path == "/v1/players/nfl/trending/add":
         return httpx2.Response(200, json=TRENDING)
+    if request.url.path == "/projections/nfl/2026/3":
+        return httpx2.Response(200, json=PROJECTIONS)
     return httpx2.Response(404)
 
 
@@ -89,3 +97,16 @@ async def test_upstream_error_is_translated(tmp_path: Path) -> None:
     provider = SleeperMarketProvider(client, Cache(tmp_path))
     with pytest.raises(UpstreamUnavailable):
         await provider.get_current_week()
+
+
+async def test_alt_projections_interpolate_the_leagues_reception_scoring(tmp_path: Path) -> None:
+    provider = _provider(tmp_path)
+    allen = Player(
+        player_id=1, name="Josh Allen", position="QB", eligible_slots=("QB",), pro_team="BUF"
+    )
+    stranger = Player(
+        player_id=2, name="Nobody Known", position="RB", eligible_slots=("RB",), pro_team="BUF"
+    )
+    assert await provider.get_alt_projections(3, [allen, stranger]) == {1: 22.0}
+    half = await provider.get_alt_projections(3, [allen], reception_points=0.5)
+    assert half == {1: 20.0}

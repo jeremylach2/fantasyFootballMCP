@@ -45,7 +45,13 @@ class LineupAdvice(BaseModel):
     current_projected: float
     optimal_projected: float
     point_gain: float
-    win_prob_delta: float
+    playoff_odds_delta: float
+    """Change in *playoff* odds, in percentage points, from making the swaps."""
+    win_probability: float | None = None
+    """Chance, in percent, the recommended lineup beats this week's opponent."""
+    strategy: str | None = None
+    """Set only when the recommendation deliberately trades projected points for a better
+    chance of winning: one sentence saying why, and what it costs."""
     swaps: list[Swap] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
     actual: ActualLineup | None = None
@@ -53,21 +59,48 @@ class LineupAdvice(BaseModel):
     ``swaps`` above, which are always pregame: the two are never conflated in one section."""
 
 
-def _swap_reason(swap: DomainSwap) -> str:
+def _swap_reason(swap: DomainSwap, tilt: float = 0.0) -> str:
     if swap.player_out is not None and is_ruled_out(swap.player_out):
         return f"{swap.player_out.name} is {swap.player_out.injury_status or 'ruled out'}"
+    if swap.player_in is not None and swap.gain < 0.0:
+        style = "higher ceiling" if tilt > 0.0 else "steadier floor"
+        return f"{swap.gain:.1f} projected, but a {style} raises win probability"
     if swap.player_in is not None:
         return f"+{swap.gain:.1f} projected points"
     return "no legal replacement available"
 
 
-def _to_wire_swap(swap: DomainSwap) -> Swap:
+def _to_wire_swap(swap: DomainSwap, tilt: float = 0.0) -> Swap:
     return Swap(
         bench=swap.player_out.name if swap.player_out is not None else "(none)",
         starter=swap.player_in.name if swap.player_in is not None else "(none)",
         slot=slot_label(swap.slot),
         gain=round(swap.gain, 1),
-        reason=_swap_reason(swap)[:80],
+        reason=_swap_reason(swap, tilt)[:80],
+    )
+
+
+def strategy_note(
+    *,
+    my_projected: float,
+    opponent_projected: float,
+    tilt: float,
+    points_win_probability: float,
+    win_probability: float,
+    points_cost: float,
+) -> str | None:
+    """The one sentence explaining a lineup that is not the points-maximising one."""
+    if tilt == 0.0:
+        return None
+    if tilt > 0.0:
+        situation = f"Projected underdog ({my_projected:.1f} vs {opponent_projected:.1f})"
+        move = "higher-ceiling starts"
+    else:
+        situation = f"Projected favourite ({my_projected:.1f} vs {opponent_projected:.1f})"
+        move = "steadier starts"
+    return (
+        f"{situation}: {move} lift win chance {points_win_probability:.0f}% -> "
+        f"{win_probability:.0f}% for {points_cost:.1f} fewer projected points."
     )
 
 
@@ -83,11 +116,15 @@ def build_lineup_advice(
     week: int,
     current: Lineup,
     optimal: Lineup,
-    win_prob_delta: float,
+    playoff_odds_delta: float,
     swaps: Sequence[DomainSwap],
     actual_current: Lineup | None = None,
     actual_optimal: Lineup | None = None,
     actual_swaps: Sequence[DomainSwap] = (),
+    win_probability: float | None = None,
+    strategy: str | None = None,
+    tilt: float = 0.0,
+    extra_caveats: Sequence[str] = (),
 ) -> LineupAdvice:
     """The common case, an already-optimal lineup, is cheap: ``swaps`` and ``caveats`` are
     both empty and the whole result is four numbers.
@@ -97,6 +134,7 @@ def build_lineup_advice(
     """
     capped = sorted(swaps, key=lambda swap: -swap.gain)[:MAX_SWAPS]
     caveats = [c for player in optimal.started if (c := _caveat(player)) is not None]
+    caveats.extend(extra_caveats)
     actual = None
     if actual_current is not None and actual_optimal is not None:
         capped_actual = sorted(actual_swaps, key=lambda swap: -swap.gain)[:MAX_SWAPS]
@@ -113,8 +151,10 @@ def build_lineup_advice(
         current_projected=round(current.projected_points, 1),
         optimal_projected=round(optimal.projected_points, 1),
         point_gain=round(optimal.projected_points - current.projected_points, 1),
-        win_prob_delta=round(win_prob_delta, 1),
-        swaps=[_to_wire_swap(swap) for swap in capped],
+        playoff_odds_delta=round(playoff_odds_delta, 1),
+        win_probability=None if win_probability is None else round(win_probability, 1),
+        strategy=strategy,
+        swaps=[_to_wire_swap(swap, tilt) for swap in capped],
         caveats=caveats,
         actual=actual,
     )

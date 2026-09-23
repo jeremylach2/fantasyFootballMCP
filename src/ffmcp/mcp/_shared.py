@@ -7,16 +7,39 @@ lifespan context off ``ctx``, assembling a ``LeagueState`` from the provider pro
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from typing import Literal
 
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import BaseModel, Field
 
-from ffmcp.domain.models import LeagueSettings, LeagueState, Player, Roster, RosterSlot, Team
+from ffmcp.domain.models import (
+    GameLine,
+    LeagueSettings,
+    LeagueState,
+    Player,
+    PlayerWeek,
+    Roster,
+    RosterSlot,
+    Team,
+)
+from ffmcp.domain.schedule import WeekWeight, remaining_week_weights
+from ffmcp.domain.usage import UsageProfile, usage_profiles
+from ffmcp.domain.variance import player_sds
 from ffmcp.errors import FFMCPError, PlayerNotFound, TeamNotConfigured, WeekOutOfRange
 from ffmcp.server import AppContext
+
+logger = logging.getLogger("ffmcp.tools")
+
+OPTIONAL_FAILURES = (FFMCPError, ValueError, KeyError)
+"""What an *optional* signal (history, a second projection source, usage, betting lines) may
+fail with and still leave the tool standing. Each of these sources only refines an answer the
+server can already give from ESPN alone, so its absence becomes a one-line caveat rather than
+an error: a tool that refuses to optimize a lineup because GitHub is slow would be worse than
+one that optimizes it with position-level variance and says so."""
 
 Detail = Literal["compact", "standard", "full"]
 """Shared by every list-shaped tool. Default is always ``"compact"``."""
@@ -200,6 +223,86 @@ async def enrich_team_roster(ctx: object, team: Team) -> Team:
     new_bench = tuple(by_id[player.player_id] for player in team.roster.bench)
     new_ir = tuple(by_id[player.player_id] for player in team.roster.ir)
     return team.model_copy(update={"roster": Roster(slots=new_slots, bench=new_bench, ir=new_ir)})
+
+
+@dataclass
+class Insights:
+    """Everything the variance model knows this week, and what it had to do without."""
+
+    sds: dict[int, float] = field(default_factory=dict)
+    """``{player_id: weekly sd}``: see ``domain.variance``."""
+    alternative: dict[int, float] = field(default_factory=dict)
+    """Second-source projections for this week, keyed by ESPN id."""
+    caveats: list[str] = field(default_factory=list)
+
+
+async def load_history(ctx: object) -> tuple[list[PlayerWeek], str | None]:
+    """This season's completed player-weeks, or ``[]`` and a caveat."""
+    app = app_context(ctx)
+    try:
+        return await app.league.get_player_history(), None
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("history unavailable: %s", exc)
+        return [], "League history unavailable; using position-level variance."
+
+
+async def load_insights(
+    ctx: object, players: Sequence[Player], week: int, settings: LeagueSettings
+) -> Insights:
+    """The variance inputs for ``players`` in ``week``: each position's measured spread,
+    widened where a second projection source disagrees with ESPN. Without the second source
+    the position spread stands alone, with a caveat saying so."""
+    app = app_context(ctx)
+    caveats: list[str] = []
+    try:
+        alternative = await app.market.get_alt_projections(
+            week, players, reception_points=settings.reception_points
+        )
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("second projection source unavailable: %s", exc)
+        alternative = {}
+        caveats.append("Second projection source unavailable; ranges use ESPN alone.")
+    sds = player_sds(players, alternative=alternative)
+    return Insights(sds=sds, alternative=alternative, caveats=caveats)
+
+
+async def load_usage(
+    ctx: object, settings: LeagueSettings
+) -> tuple[dict[int, UsageProfile], str | None]:
+    """Season-to-date usage profiles, or ``{}`` and a caveat."""
+    app = app_context(ctx)
+    try:
+        weeks = await app.usage.get_usage(reception_points=settings.reception_points)
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("usage data unavailable: %s", exc)
+        return {}, "Usage data (nflverse) unavailable right now."
+    return usage_profiles(weeks, settings.reception_points), None
+
+
+async def load_game_lines(ctx: object) -> dict[str, GameLine]:
+    """This week's betting lines by pro team, or ``{}``: purely contextual, so no caveat."""
+    app = app_context(ctx)
+    try:
+        return await app.odds.get_game_lines()
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("game lines unavailable: %s", exc)
+        return {}
+
+
+def week_weights_by_team(state: LeagueState) -> dict[int, tuple[WeekWeight, ...]]:
+    """Each team's remaining-season calendar, playoff weeks weighted by that team's own
+    playoff odds (ESPN's, already on ``Team``: no simulation needed to price a trade)."""
+    return {
+        team.team_id: remaining_week_weights(
+            state.settings, state.current_week, playoff_probability=team.playoff_pct / 100.0
+        )
+        for team in state.teams
+    }
+
+
+def league_players(state: LeagueState) -> list[Player]:
+    """Every startable rostered player in the league."""
+    return [player for team in state.teams for player in team.roster.players]
 
 
 def require_single_match(matches: Sequence[Player], query: str) -> Player:

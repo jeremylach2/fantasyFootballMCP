@@ -11,10 +11,12 @@ Four layers, one direction of dependency. Arrows point the only way imports are 
   render/     domain objects → compact text / small structured models
     │
     ▼
-  domain/     PURE: models, optimizer, simulation, valuation, trades
-    ▲         (no I/O, no network, no MCP imports, no clock, no randomness
+  domain/     PURE: models, optimizer, simulation, valuation, trades, variance,
+    ▲         risk, schedule, usage, league_intel, calibration
+    │         (no I/O, no network, no MCP imports, no clock, no randomness
     │          except through an injected Generator)
-  providers/  ALL I/O: espn-api, Sleeper httpx2, disk cache
+  providers/  ALL I/O: espn-api, Sleeper, nflverse and The Odds API over httpx2,
+              disk cache
 ```
 
 `providers/` builds domain objects and hands them upward. `domain/` never reaches down. The
@@ -59,6 +61,11 @@ TTLs follow how fast the underlying truth actually moves:
 | Weekly projections | ESPN | 30 min | updates through the week |
 | Player universe | Sleeper | 24 h | ~14.6 MB; fetch once a day, never in full to the model |
 | Trending adds/drops | Sleeper | 15 min | that is the point of the signal |
+| Completed weeks' box scores | ESPN | 7 d (6 h for last week) | history never changes once stat corrections settle |
+| Second-opinion projections | Sleeper | 1 h (7 d for past weeks) | ~2 MB filtered to fantasy positions, reduced to two numbers per player |
+| ID crosswalk (ESPN, GSIS, PFR) | nflverse | 24 h | 7 MB CSV reduced to two id maps |
+| Weekly usage, snap counts | nflverse | 6 h | rebuilt overnight upstream |
+| Betting lines | The Odds API | 12 h | free tier is 500 requests a month; 2 per fetch |
 
 Two rules for the Sleeper player dump: it is fetched **lazily** (nothing needs it at startup) and
 it is **immediately reduced** to an id→`{name, pos, team}` index on write. The raw document never
@@ -69,8 +76,9 @@ cache but does not warm them. A server that hangs for twelve seconds before answ
 `tools/list` is a bad demo.
 
 **Gap, stated rather than hidden:** the differentiated TTLs in the table above describe what
-`SleeperMarketProvider` actually does, but `EspnLeagueProvider` does not use the shared
-`Cache` at all. It holds one `espn_api.League` handle behind a single blanket
+`SleeperMarketProvider`, `NflverseUsageProvider` and `OddsApiProvider` actually do, and what
+`EspnLeagueProvider.get_player_history` does for completed weeks, but the rest of
+`EspnLeagueProvider` does not use the shared `Cache`. It holds one `espn_api.League` handle behind a single blanket
 `_LEAGUE_TTL_SECONDS` (600s), so league settings, rosters and live scores all refresh together
 on one timer rather than on the four separate schedules the table above implies. Rule 3 in §4
 below ("stale beats absent") is likewise unimplemented on the ESPN path: `Cache.get_stale()`
@@ -115,6 +123,10 @@ Three rules:
 3. Stale beats absent. If upstream fails and the cache holds an expired entry, serve it and
    say so in one clause (`cached 14m ago; ESPN unreachable`). A stale roster is far more useful
    than an exception.
+4. Optional beats fatal. Every source beyond ESPN (Sleeper projections, nflverse usage, betting
+   lines, even the league's own history) only refines an answer ESPN alone can give. Its
+   failure is caught in `mcp/_shared.py` (`OPTIONAL_FAILURES`) and becomes a one-line caveat,
+   never a failed tool call.
 
 ## 5. Configuration
 
@@ -129,6 +141,7 @@ Three rules:
 | `FFMCP_TEAM_ID` | — | which team is "mine"; if unset, elicit once and cache |
 | `FFMCP_ESPN_S2` | — | secret; private leagues only |
 | `FFMCP_SWID` | — | secret; private leagues only |
+| `FFMCP_ODDS_API_KEY` | — | secret; optional, betting lines; `ODDS_API_KEY` also accepted |
 | `FFMCP_CACHE_DIR` | `~/.cache/ffmcp` | |
 | `FFMCP_SIMS` | `10000` | Monte Carlo iterations |
 
@@ -170,41 +183,33 @@ rather than only in the benchmark, and it costs nothing.
 
 Optionally attach a `ServerMiddleware` to do this uniformly rather than decorating each tool.
 
-## 9. Future work: consensus-rank cross-check (not implemented)
+## 9. A second projection source (implemented)
 
-Chosen to not implement this to not require users to sign up for an account and create an API key.
+ESPN's own `projected_points` was the sole basis for every projection the server produced, and
+an earlier version of this section proposed a cross-check against a second source, surfaced as a
+disagreement flag and never blended into the number itself. It was shelved because the two
+candidates did not fit (FantasyFootballCalculator's ADP is draft-time only; FantasyPros needs an
+account and a key).
 
-ESPN's own `projected_points` is the sole basis for every projection and VOR figure the server
-produces (`providers/espn.py`). For high-variance positions, such as D/ST and K, a
-handful of sacks or a return TD swings a week. One site's model can lag what the broader analyst
-community already knows (an O-line injury, a defensive coordinator change) faster than it can
-propagate into ESPN's own number. A second, independent signal would let a tool say "ESPN
-projects A over B, but expert consensus ranks B higher" instead of presenting ESPN's figure as
-uncontested.
+Sleeper's weekly projections turned out to fit: no key, the same identity machinery that already
+reconciles ESPN ids against Sleeper's (`providers/identity.py`), and both standard and PPR figures,
+so any reception scoring interpolates exactly. `SleeperMarketProvider.get_alt_projections` serves
+them keyed by ESPN id.
 
-**Why this isn't built:** the design is straightforward, but a suitable data source is not. Two
-free options exist and neither fits:
+The design principle survived, and then the data backed it. Measured over a real league's 2025
+season (`scripts/calibrate.py`), Sleeper and ESPN are equally accurate (mean absolute error 5.68
+each) and their average barely improves on either (5.66), so the number is never blended. But
+the *disagreement* between them is strongly predictive of error: the most-disputed 5% of
+projections missed by 2.5 times as much as the least-disputed half. So disagreement widens a
+player's range (`domain/variance.py`), `player_report` shows the second opinion, and
+`projection_accuracy` reports both sources' error in the user's own league.
 
-- **FantasyFootballCalculator ADP API** — genuinely free, no signup, attribution only
-  (help.fantasyfootballcalculator.com/article/42-adp-rest-api). But ADP is a draft-time signal; it
-  does not move week to week and cannot answer a weekly streaming question like D/ST.
-- **FantasyPros Public API** — the real weekly expert-consensus rankings data, but gated behind
-  account signup and an API key (fantasypros.com/api-data). Free at this scale, but not the
-  zero-friction, no-auth shape `SleeperMarketProvider` enjoys.
+## 10. Calibration
 
-Picking this up later means accepting the FantasyPros signup, or finding an equivalent weekly
-consensus source with a comparably open API.
-
-**Proposed shape, if built**, following the pattern `SleeperMarketProvider` already establishes
-for a second upstream source:
-
-- A `ConsensusSignal` domain model (`rank: int | None`, `source: str`) alongside the existing
-  `MarketSignal` on `Player` (`domain/models.py`) — frozen, optional, vendor-agnostic.
-- A `ConsensusRankProvider`, resolved through the same `providers/identity.py` machinery already
-  reconciling ESPN IDs against Sleeper's, so a third vocabulary doesn't need its own matcher.
-- An `enrich_with_consensus` step in `mcp/_shared.py`, mirroring `enrich_with_market`.
-- Surfaced in `compare_players` and `find_waiver_targets` (`mcp/tools_roster.py`) as a disagreement
-  flag only — shown when ESPN's ordering and consensus rank disagree — never blended into the VOR
-  score itself. `valuation.py` already establishes the principle for the market-sentiment nudge:
-  a soft signal may act as a tiebreaker within a few percent, never overturn a real projection
-  gap. Consensus rank should follow the same rule rather than get its own weighting scheme.
+Every fitted constant in `domain/` (position spreads, the team correlation factor, the
+disagreement sensitivity, the expected-points coefficients, the luck and lineup-accuracy
+thresholds) comes from `scripts/calibrate.py`, which prints the evidence for each against real
+data and is re-run by hand. Its output is copied into the code deliberately, so a refit is a
+reviewed diff rather than a silent drift, and each constant's docstring says where it came from.
+The script also records what was tested and rejected (per-player bias correction, per-player
+spread from history), because a model that only lists what it kept cannot show it was tested.

@@ -15,6 +15,13 @@ def test_redact_strips_espn_s2_and_swid() -> None:
     assert FAKE_SWID not in result
 
 
+def test_redact_strips_an_api_key_query_parameter() -> None:
+    text = "HTTP 401 for https://api.the-odds-api.com/v4/odds?apiKey=909ae013cdda&regions=us"
+    result = redact(text)
+    assert "909ae013cdda" not in result
+    assert "apiKey=[REDACTED]&regions=us" in result
+
+
 def test_redact_strips_cookie_header() -> None:
     text = f"Cookie: espn_s2={FAKE_ESPN_S2}; SWID={FAKE_SWID}\nGET /league HTTP/1.1"
     result = redact(text)

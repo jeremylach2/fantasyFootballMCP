@@ -44,6 +44,14 @@ class Player(Frozen):
     """Actual points scored so far this week, or ``None`` before the player's game has kicked
     off (including a bye). Distinct from ``projection``, which never updates once the week's
     games start."""
+    bye_week: int | None = None
+    """The NFL week this player's pro team is off, or ``None`` when the provider does not know.
+    Rest-of-season value needs it: a player on bye during your first playoff week is worth one
+    fewer week than his projection times the weeks remaining suggests."""
+    season_rate: float | None = None
+    """Projected points per game over the season, where the provider publishes one. Stands in
+    for a weekly projection the player does not have this week (a bye), so a player is not
+    valued at zero for the rest of the season just because this week happens to be his bye."""
 
 
 class RosterSlot(Frozen):
@@ -130,6 +138,19 @@ class LeagueSettings(Frozen):
     reg_season_weeks: int
     slot_counts: dict[str, int]
     scoring_type: str | None = None
+    reception_points: float = 1.0
+    """Points per reception: 1.0 for PPR, 0.5 for half-PPR, 0.0 for standard. Picks which of a
+    second projection source's scoring variants matches this league."""
+    playoff_round_weeks: int = 1
+    """NFL weeks per playoff round (ESPN lets a league play two-week rounds)."""
+
+    @property
+    def playoff_weeks(self) -> tuple[int, ...]:
+        """The NFL weeks the fantasy playoffs occupy, derived from the bracket size: eight
+        teams is three rounds, so a 14-week regular season puts the playoffs in weeks 15-17."""
+        rounds = max(0, (max(1, self.playoff_team_count) - 1).bit_length())
+        first = self.reg_season_weeks + 1
+        return tuple(range(first, first + rounds * max(1, self.playoff_round_weeks)))
 
     @property
     def starting_slots(self) -> tuple[str, ...]:
@@ -164,6 +185,87 @@ class LeagueState(Frozen):
             if team.team_id == team_id:
                 return team
         raise KeyError(f"team {team_id} is not in this league")
+
+
+class PlayerWeek(Frozen):
+    """One rostered player's completed week: what was projected, what happened, and where he
+    sat. The raw material for everything this server learns from the league's own history:
+    variance, projection accuracy, lineup efficiency."""
+
+    season: int
+    week: int
+    player_id: int
+    name: str
+    position: str
+    pro_team: str
+    eligible_slots: tuple[str, ...] = ()
+    fantasy_team_id: int | None = None
+    slot: str | None = None
+    """The lineup slot he was in (``"BE"`` for the bench). ``None`` for a free agent."""
+    projected: float | None = None
+    actual: float = 0.0
+    played: bool = True
+    """Whether his NFL game was played. A bye or an inactive week is not a scoring outcome."""
+
+    @property
+    def started(self) -> bool:
+        return self.slot is not None and self.slot not in NON_STARTING_SLOTS
+
+    def as_player(self, *, hindsight: bool = True) -> Player:
+        """A bare ``Player`` carrying this week's actual points (``hindsight``) or its
+        pre-game projection as his projection, so a completed week can be run back through
+        ``domain.optimizer`` with either what happened or what was known at the time."""
+        points = self.actual if hindsight else self.projected
+        source = "actual" if hindsight else "espn"
+        return Player(
+            player_id=self.player_id,
+            name=self.name,
+            position=self.position,
+            eligible_slots=self.eligible_slots,
+            pro_team=self.pro_team,
+            projection=None
+            if points is None
+            else Projection(week=self.week, points=points, source=source),
+        )
+
+
+class UsageWeek(Frozen):
+    """One player's NFL workload in one game, from play-by-play derived stats. Opportunity is
+    what a player's role *gives* him; points are what he did with it. Only the first is stable
+    enough to project from."""
+
+    season: int
+    week: int
+    player_id: int
+    """ESPN player id, so usage joins straight onto rosters."""
+    name: str
+    position: str
+    pro_team: str
+    snap_pct: float | None = None
+    """Share of the team's offensive snaps, 0-1."""
+    attempts: float = 0.0
+    passing_air_yards: float = 0.0
+    carries: float = 0.0
+    targets: float = 0.0
+    receiving_air_yards: float = 0.0
+    target_share: float | None = None
+    """Share of the team's targets, 0-1."""
+    air_yards_share: float | None = None
+    fantasy_points: float = 0.0
+    """Points under this league's reception scoring."""
+
+
+class GameLine(Frozen):
+    """The betting market's view of one team's upcoming game."""
+
+    pro_team: str
+    opponent: str
+    implied_total: float
+    """Points the market expects this team to score: half the total, adjusted by the spread."""
+    spread: float
+    """This team's point spread, negative when favoured."""
+    total: float
+    kickoff: str | None = None
 
 
 class TradeOffer(Frozen):

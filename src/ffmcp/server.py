@@ -26,10 +26,17 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from ffmcp import __version__
 from ffmcp.config import ConfigurationError, Settings, load_settings
 from ffmcp.errors import FFMCPError
-from ffmcp.providers.base import LeagueProvider, MarketProvider
+from ffmcp.providers.base import LeagueProvider, MarketProvider, OddsProvider, UsageProvider
 from ffmcp.providers.cache import Cache
-from ffmcp.providers.demo import DemoLeagueProvider, DemoMarketProvider
+from ffmcp.providers.demo import (
+    DemoLeagueProvider,
+    DemoMarketProvider,
+    DemoOddsProvider,
+    DemoUsageProvider,
+)
 from ffmcp.providers.espn import EspnLeagueProvider
+from ffmcp.providers.nflverse import NflverseUsageProvider
+from ffmcp.providers.odds import OddsApiProvider
 from ffmcp.providers.sleeper import SleeperMarketProvider
 
 logger = logging.getLogger("ffmcp")
@@ -60,6 +67,8 @@ class AppContext:
     cache: Cache
     league: LeagueProvider
     market: MarketProvider
+    usage: UsageProvider
+    odds: OddsProvider
 
 
 _current_app_context: AppContext | None = None
@@ -92,11 +101,15 @@ async def app_lifespan(_server: MCPServer) -> AsyncGenerator[AppContext]:
 
     league: LeagueProvider
     market: MarketProvider
+    usage: UsageProvider
+    odds: OddsProvider
     http_client: httpx2.AsyncClient | None = None
 
     if settings.mode == "demo":
         league = DemoLeagueProvider()
         market = DemoMarketProvider()
+        usage = DemoUsageProvider()
+        odds = DemoOddsProvider()
     else:
         assert settings.league_id is not None  # guaranteed by load_settings() in live mode
         http_client = httpx2.AsyncClient(timeout=httpx2.Timeout(15.0, connect=5.0))
@@ -110,9 +123,18 @@ async def app_lifespan(_server: MCPServer) -> AsyncGenerator[AppContext]:
             espn_s2=settings.espn_s2.get_secret_value() if settings.espn_s2 else None,
             swid=settings.swid.get_secret_value() if settings.swid else None,
             resolve_season=market.get_current_season,
+            cache=cache,
+        )
+        usage = NflverseUsageProvider(http_client, cache, market.get_current_season)
+        odds = OddsApiProvider(
+            http_client,
+            cache,
+            settings.odds_api_key.get_secret_value() if settings.odds_api_key else None,
         )
 
-    app_context = AppContext(settings=settings, cache=cache, league=league, market=market)
+    app_context = AppContext(
+        settings=settings, cache=cache, league=league, market=market, usage=usage, odds=odds
+    )
     _current_app_context = app_context
     try:
         yield app_context
@@ -132,7 +154,15 @@ def build_server() -> MCPServer:
     file (as ``mcp/tools_*.py`` are organized by perspective, not by surface order) would not
     produce it.
     """
-    from ffmcp.mcp import prompts, resources, tools_league, tools_lineup, tools_roster, tools_trade
+    from ffmcp.mcp import (
+        prompts,
+        resources,
+        tools_insights,
+        tools_league,
+        tools_lineup,
+        tools_roster,
+        tools_trade,
+    )
 
     mcp = MCPServer(
         name="fantasy-football",
@@ -149,10 +179,13 @@ def build_server() -> MCPServer:
     tools_trade.register_find_trades(mcp)
     tools_trade.register_evaluate_trade(mcp)
     tools_roster.register_find_waiver_targets(mcp)
+    tools_insights.register_buy_low_sell_high(mcp)
     tools_league.register_simulate_season(mcp)
     tools_league.register_league_standings(mcp)
+    tools_league.register_power_rankings(mcp)
     tools_roster.register_player_report(mcp)
     tools_roster.register_compare_players(mcp)
+    tools_insights.register_projection_accuracy(mcp)
 
     resources.register(mcp)
     prompts.register(mcp)

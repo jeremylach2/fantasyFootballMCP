@@ -43,6 +43,24 @@ PLAYOFF%   Simulated probability of making the playoffs (`simulate_season`) or, 
         of a "power ranking" column, which nothing in this server's data model computes.
 SOS     Remaining strength of schedule: the average current win percentage of a team's
         opponents over the rest of the regular season.
+FLOOR / CEIL   10th / 90th percentile outcome for the week. The spread comes from variance
+        measured on a real league's season, widened for a player whose own history is volatile
+        and when ESPN and Sleeper disagree about him.
+IMPL    The player's NFL team's implied points from the betting line (total / 2 - spread / 2).
+        Context only: ESPN's projection already reflects the matchup, so it is never added in.
+ROS     Rest-of-season marginal value: lineup points added over every remaining week, each
+        player absent in his bye week, playoff weeks weighted by your playoff odds.
+Win probability   Chance your lineup outscores this week's opponent. optimize_lineup maximises
+        it, which occasionally means a lower-projected, higher-ceiling start when you are the
+        underdog (or a steadier one when you are the favourite).
+Stakes  Playoff odds if you win this week versus if you lose it.
+XPPG    Expected points per game from volume alone (snaps, targets, carries, air yards).
+LUCK    Actual minus expected points per game. Large gaps regress: the basis for buy-low and
+        sell-high.
+ALLPLAY Record if a team had played every other team every week.
+LINEUP% Projected points started over the best lineup by the projections available that week:
+        a manager's decisions, net of luck.
+BENCH   Points per game a perfect-hindsight lineup would have added (mostly luck).
 """
 
 

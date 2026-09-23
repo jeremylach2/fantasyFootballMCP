@@ -34,8 +34,11 @@ CALLS: tuple[tuple[str, dict[str, object], str], ...] = (
     ("find_waiver_targets", {"detail": "full", "limit": 25}, "find_waiver_targets:full"),
     ("simulate_season", {"n_sims": 2000}, "simulate_season"),
     ("league_standings", {}, "league_standings:compact"),
+    ("power_rankings", {}, "power_rankings"),
+    ("buy_low_sell_high", {}, "buy_low_sell_high"),
     ("player_report", {"name": "Caleb Fairbanks"}, "player_report"),
     ("compare_players", {"names": ["Dominic Okafor", "Elijah Villanueva"]}, "compare_players"),
+    ("projection_accuracy", {}, "projection_accuracy"),
 )
 
 assert {key for _, _, key in CALLS} == set(TOKEN_BUDGETS), (

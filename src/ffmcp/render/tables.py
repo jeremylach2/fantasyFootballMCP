@@ -12,10 +12,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Literal
 
-from ffmcp.domain.models import LeagueState, MarketSignal, Player, Team
+from ffmcp.domain.calibration import SourceAccuracy
+from ffmcp.domain.league_intel import ManagerReport
+from ffmcp.domain.models import GameLine, LeagueState, MarketSignal, Player, Team
 from ffmcp.domain.optimizer import is_ruled_out, projected_points
-from ffmcp.domain.simulate import SeasonOutcome
+from ffmcp.domain.simulate import SeasonOutcome, WeekStakes
+from ffmcp.domain.usage import UsageProfile
 from ffmcp.domain.valuation import remaining_strength_of_schedule
+from ffmcp.domain.variance import disagreement, floor_ceiling
 
 Detail = Literal["compact", "standard", "full"]
 
@@ -180,26 +184,34 @@ def render_roster(team: Team, week: int, detail: Detail) -> str:
 # ---------------------------------------------------------------------------
 
 _WAIVER_HEADERS: dict[Detail, tuple[str, ...]] = {
-    "compact": ("PLAYER", "POS", "TM", "PROJ", "VAL", "DROP"),
-    "standard": ("PLAYER", "POS", "TM", "PROJ", "VAL", "DROP", "TREND"),
-    "full": ("PLAYER", "POS", "TM", "PROJ", "VAL", "DROP", "TREND", "OWN%"),
+    "compact": ("PLAYER", "POS", "TM", "PROJ", "VAL", "ROS", "DROP"),
+    "standard": ("PLAYER", "POS", "TM", "PROJ", "VAL", "ROS", "DROP", "TREND"),
+    "full": ("PLAYER", "POS", "TM", "PROJ", "VAL", "ROS", "DROP", "TREND", "OWN%"),
 }
 _WAIVER_WIDTHS: dict[Detail, tuple[int, ...]] = {
-    "compact": (16, 4, 3, 5, 6, 16),
-    "standard": (16, 4, 3, 5, 6, 16, 6),
-    "full": (16, 4, 3, 5, 6, 16, 6, 5),
+    "compact": (16, 4, 3, 5, 6, 6, 16),
+    "standard": (16, 4, 3, 5, 6, 6, 16, 6),
+    "full": (16, 4, 3, 5, 6, 6, 16, 6, 5),
 }
 
 
 class WaiverTarget:
-    """One ranked pickup: the add, its marginal value to this roster, and who to drop for it."""
+    """One ranked pickup: the add, its marginal value to this roster this week and over the
+    rest of the season, and who to drop for it."""
 
-    __slots__ = ("drop", "marginal_value", "player")
+    __slots__ = ("drop", "marginal_value", "player", "season_value")
 
-    def __init__(self, player: Player, marginal_value: float, drop: Player | None) -> None:
+    def __init__(
+        self,
+        player: Player,
+        marginal_value: float,
+        drop: Player | None,
+        season_value: float | None = None,
+    ) -> None:
         self.player = player
         self.marginal_value = marginal_value
         self.drop = drop
+        self.season_value = season_value
 
 
 def _waiver_row(
@@ -212,6 +224,7 @@ def _waiver_row(
         player.pro_team,
         fmt_points(projected_points(player)),
         f"{target.marginal_value:+.1f}",
+        "" if target.season_value is None else f"{target.season_value:+.0f}",
         short_name(target.drop.name, 16) if target.drop is not None else no_drop_label,
     ]
     if detail in ("standard", "full"):
@@ -230,6 +243,7 @@ def render_waiver_targets(
     limit: int,
     total_considered: int,
     near_misses: Sequence[WaiverTarget] = (),
+    handcuffs: Sequence[str] = (),
 ) -> str:
     """``find_waiver_targets``: ranked by marginal value, drop always named, because a pickup
     recommendation with no drop is useless advice.
@@ -241,17 +255,18 @@ def render_waiver_targets(
     """
     headers = _WAIVER_HEADERS[detail]
     widths = _WAIVER_WIDTHS[detail]
+    footer = "" if not handcuffs else "\nHandcuffs: " + "; ".join(handcuffs)
     if not targets:
         if not near_misses:
-            return "No waiver targets clear the bar this week."
+            return "No waiver targets clear the bar this week." + footer
         rows = [_waiver_row(target, detail, no_drop_label="(no upgrade)") for target in near_misses]
         table = render_table(headers, widths, rows)
-        return f"Closest misses (would not improve your lineup):\n{table}"
+        return f"Closest misses (would not improve your lineup):\n{table}{footer}"
     rows = [_waiver_row(target, detail) for target in targets[:limit]]
     table = render_table(headers, widths, rows)
     if total_considered > limit:
         table += f"\n… {total_considered - limit} more (raise limit to see)"
-    return table
+    return table + footer
 
 
 # ---------------------------------------------------------------------------
@@ -361,6 +376,7 @@ def render_matchup(
     edges: Sequence[tuple[str, float]],
     swing_player: Player | None,
     swing_sd: float,
+    stakes: WeekStakes | None = None,
 ) -> str:
     """``analyze_matchup``: totals, win probability, the biggest positional edges, and the
     single highest-variance swing player.
@@ -388,6 +404,11 @@ def render_matchup(
         lines.append(
             f"Swing player: {short_name(swing_player.name, 20)} "
             f"({swing_player.position} {swing_player.pro_team}, ±{swing_sd:.1f} pts)"
+        )
+    if stakes is not None:
+        lines.append(
+            f"Stakes: win -> {stakes.playoff_odds_if_win:.0f}% playoff odds, "
+            f"loss -> {stakes.playoff_odds_if_loss:.0f}% ({stakes.leverage:.0f}-pt swing)"
         )
     return "\n".join(lines)
 
@@ -447,23 +468,77 @@ def _status_line(player: Player, points: float | None) -> str:
     return "Status: healthy"
 
 
+_SIGNAL_LABELS = {"buy_low": "buy low", "sell_high": "sell high"}
+
+
+def render_usage(profile: UsageProfile) -> str:
+    """One line on workload and luck: the evidence behind a buy-low or sell-high call."""
+    parts = []
+    if profile.snap_pct is not None:
+        recent = profile.recent_snap_pct
+        last = f" (last {recent:.0f}%)" if recent is not None else ""
+        parts.append(f"{profile.snap_pct:.0f}% snaps{last}")
+    if profile.targets_per_game >= 1.0:
+        share = f" ({profile.target_share:.0f}% share)" if profile.target_share else ""
+        parts.append(f"{profile.targets_per_game:.1f} tgt/g{share}")
+    if profile.carries_per_game >= 1.0 and profile.position != "QB":
+        parts.append(f"{profile.carries_per_game:.1f} car/g")
+    verdict = _SIGNAL_LABELS.get(profile.signal or "", "")
+    luck = f"expected {profile.expected_ppg:.1f} vs actual {profile.actual_ppg:.1f} pts/g" + (
+        f" -> {verdict}" if verdict else ""
+    )
+    return f"Usage ({profile.games} g): " + ", ".join([*parts, luck])
+
+
+def render_game_line(line: GameLine) -> str:
+    return (
+        f"Game: {line.pro_team} implied {line.implied_total:.1f} pts "
+        f"({line.spread:+.1f} vs {line.opponent}, total {line.total:.1f})"
+    )
+
+
 def render_player_report(
     player: Player,
     *,
     week: int,
     value_over_replacement: float,
-    weeks_remaining: int,
+    effective_weeks: float,
+    sd: float | None = None,
+    alternative: float | None = None,
+    usage: UsageProfile | None = None,
+    game_line: GameLine | None = None,
 ) -> str:
     points = projected_points(player)
     market = player.market
-    rest_of_season = value_over_replacement * weeks_remaining
-    lines = [
-        f"{player.name} — {player.position} {player.pro_team}, week {week}",
-        f"Projected: {fmt_points(points)} pts",
-        _status_line(player, points),
+    rest_of_season = value_over_replacement * effective_weeks
+    projected = f"Projected: {fmt_points(points)} pts"
+    if points is not None and sd is not None:
+        low, high = floor_ceiling(points, sd)
+        projected += f" (range {low:.1f}-{high:.1f}, p10-p90)"
+    if points is None and player.season_rate is not None and not is_ruled_out(player):
+        projected = f"Projected: no game this week (season rate {player.season_rate:.1f} pts/g)"
+    lines = [f"{player.name} — {player.position} {player.pro_team}, week {week}", projected]
+    if alternative is not None:
+        gap = disagreement(points, alternative)
+        note = (
+            f"; sources disagree by {gap * 100:.0f}%, so the range is wider"
+            if gap is not None and gap >= 0.25
+            else ""
+        )
+        lines.append(f"Second opinion: Sleeper {alternative:.1f}{note}")
+    status = _status_line(player, points)
+    if player.bye_week is not None and player.bye_week != week:
+        status += f" · bye week {player.bye_week}"
+    lines.append(status)
+    lines.append(
         f"Value over replacement: {value_over_replacement:+.1f} pts/wk, "
-        f"{rest_of_season:+.1f} pts rest of season ({weeks_remaining} wks)",
-    ]
+        f"{rest_of_season:+.1f} pts rest of season ({effective_weeks:.1f} wks, byes and "
+        "playoff odds counted)"
+    )
+    if usage is not None:
+        lines.append(render_usage(usage))
+    if game_line is not None:
+        lines.append(render_game_line(game_line))
     if market is not None:
         pieces = []
         if market.percent_owned is not None:
@@ -475,13 +550,162 @@ def render_player_report(
     return "\n".join(lines)
 
 
-def render_compare_players(recommendation: str, rows: Sequence[tuple[Player, float, float]]) -> str:
+def render_compare_players(
+    recommendation: str,
+    rows: Sequence[tuple[Player, float, float]],
+    sds: dict[int, float] | None = None,
+    game_lines: dict[str, GameLine] | None = None,
+) -> str:
     """``rows`` are ``(player, projected_points, value_over_replacement)``, already ordered
-    best-first. The recommendation names ``rows[0]``."""
-    headers = ("PLAYER", "POS", "TM", "PROJ", "VOR")
-    widths = (16, 4, 3, 5, 6)
-    table_rows = [
-        [short_name(p.name), p.position, p.pro_team, fmt_points(points), f"{vor:+.1f}"]
-        for p, points, vor in rows
-    ]
+    best-first. The recommendation names ``rows[0]``. FLOOR and CEIL are the 10th and 90th
+    percentile outcomes; IMPL is the player's team's implied points from the betting line."""
+    headers = ("PLAYER", "POS", "TM", "PROJ", "FLOOR", "CEIL", "IMPL", "VOR")
+    widths = (16, 4, 3, 5, 5, 5, 5, 6)
+    table_rows = []
+    for p, points, vor in rows:
+        sd = (sds or {}).get(p.player_id)
+        low, high = floor_ceiling(points, sd) if sd is not None else (None, None)
+        line = (game_lines or {}).get(p.pro_team)
+        table_rows.append(
+            [
+                short_name(p.name),
+                p.position,
+                p.pro_team,
+                fmt_points(points),
+                fmt_points(low),
+                fmt_points(high),
+                "" if line is None else f"{line.implied_total:.1f}",
+                f"{vor:+.1f}",
+            ]
+        )
     return f"{recommendation}\n{render_table(headers, widths, table_rows)}"
+
+
+# ---------------------------------------------------------------------------
+# power_rankings
+# ---------------------------------------------------------------------------
+
+_POWER_HEADERS = ("RK", "ID", "TEAM", "W-L", "ALLPLAY", "LUCK", "PPG", "LINEUP%", "BENCH")
+_POWER_WIDTHS = (3, 3, 14, 5, 7, 5, 6, 7, 5)
+
+
+def render_power_rankings(reports: Sequence[ManagerReport], weeks: int) -> str:
+    """``power_rankings``: teams by all-play record, with the luck gap and lineup accuracy.
+
+    ``LUCK`` is actual wins minus all-play expected wins. ``LINEUP%`` is projected points
+    started over the best lineup available by the projections of the day: decisions, not luck.
+    ``BENCH`` is points per game a perfect-hindsight lineup would have added, which is mostly
+    luck and is shown as context only."""
+    rows = []
+    notes = []
+    for rank, report in enumerate(reports, start=1):
+        losses = report.games - report.wins
+        record = f"{report.wins:g}-{losses:g}"
+        rows.append(
+            [
+                str(rank),
+                str(report.team_id),
+                report.name[:14],
+                record,
+                f"{report.all_play_wins}-{report.all_play_losses}",
+                f"{report.luck:+.1f}",
+                f"{report.points_per_game:.1f}",
+                fmt_pct(report.lineup_accuracy, decimals=0),
+                fmt_points(report.bench_points_per_game),
+            ]
+        )
+        if report.tags:
+            notes.append(f"{report.name}: {', '.join(report.tags)}")
+    title = f"Power rankings after {weeks} week{'s' if weeks != 1 else ''} (by all-play record):"
+    body = render_table(_POWER_HEADERS, _POWER_WIDTHS, rows)
+    return "\n".join([title, body, *notes])
+
+
+# ---------------------------------------------------------------------------
+# buy_low_sell_high
+# ---------------------------------------------------------------------------
+
+_LUCK_HEADERS = ("PLAYER", "POS", "TM", "OWNER", "G", "SNAP", "XPPG", "PPG", "LUCK")
+_LUCK_WIDTHS = (16, 4, 3, 14, 2, 4, 5, 5, 5)
+
+
+def _luck_row(profile: UsageProfile, owner: str) -> list[str]:
+    return [
+        short_name(profile.name),
+        profile.position,
+        profile.pro_team,
+        owner[:14],
+        str(profile.games),
+        "" if profile.snap_pct is None else f"{profile.snap_pct:.0f}%",
+        f"{profile.expected_ppg:.1f}",
+        f"{profile.actual_ppg:.1f}",
+        f"{profile.luck_ppg:+.1f}",
+    ]
+
+
+def render_buy_low_sell_high(
+    sections: Sequence[tuple[str, Sequence[tuple[UsageProfile, str]]]],
+    *,
+    labelled: bool,
+    min_games: int,
+) -> str:
+    """``buy_low_sell_high``. XPPG is expected points per game from volume alone; LUCK is
+    actual minus expected. ``labelled`` is ``False`` before any player has ``min_games`` games,
+    when the tables are a watch list rather than a verdict."""
+    out = []
+    if not labelled:
+        out.append(
+            f"Early season: labels need {min_games}+ games, so these are the biggest gaps to "
+            "watch, not yet calls."
+        )
+    for title, rows in sections:
+        out.append(f"{title}:")
+        if not rows:
+            out.append("  none")
+            continue
+        out.append(render_table(_LUCK_HEADERS, _LUCK_WIDTHS, [_luck_row(p, o) for p, o in rows]))
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# projection_accuracy
+# ---------------------------------------------------------------------------
+
+_ACCURACY_HEADERS = ("POS", "N", "ESPN", "SLEEPER", "AVG", "BIAS")
+_ACCURACY_WIDTHS = (4, 5, 5, 7, 5, 6)
+
+
+def render_projection_accuracy(
+    rows: Sequence[SourceAccuracy], weeks: int, disputes: Sequence[str] = ()
+) -> str:
+    """``projection_accuracy``: mean absolute error per source, on identical player-weeks where
+    both sources exist, plus ESPN's bias (actual minus projected; negative = over-projects)."""
+    table_rows = []
+    for row in rows:
+        espn = row.primary_mae_matched if row.primary_mae_matched is not None else row.primary_mae
+        table_rows.append(
+            [
+                row.position,
+                str(row.secondary_n or row.n),
+                f"{espn:.2f}",
+                "" if row.secondary_mae is None else f"{row.secondary_mae:.2f}",
+                "" if row.blend_mae is None else f"{row.blend_mae:.2f}",
+                f"{row.primary_bias:+.2f}",
+            ]
+        )
+    lines = [
+        f"Projection error in this league, weeks 1-{weeks} (mean absolute error, pts):",
+        render_table(_ACCURACY_HEADERS, _ACCURACY_WIDTHS, table_rows),
+    ]
+    overall = next((row for row in rows if row.position == "ALL"), None)
+    if overall is not None and overall.secondary_mae is not None:
+        espn = overall.primary_mae_matched or overall.primary_mae
+        better = "ESPN" if espn < overall.secondary_mae else "Sleeper"
+        margin = abs(espn - overall.secondary_mae)
+        lines.append(
+            f"{better} is closer by {margin:.2f} pts/player-week. Differences under ~0.3 are "
+            "noise at this sample size; where the sources disagree, trust both less."
+        )
+    if disputes:
+        lines.append("Biggest disagreements on your roster this week: " + "; ".join(disputes))
+    return "\n".join(lines)

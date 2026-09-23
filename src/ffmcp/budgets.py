@@ -22,6 +22,9 @@ TOKEN_BUDGETS: dict[str, int] = {
     "find_waiver_targets:full": 2000,
     "simulate_season": 700,
     "league_standings:compact": 400,
+    "power_rankings": 700,
+    "buy_low_sell_high": 700,
     "player_report": 600,
     "compare_players": 500,
+    "projection_accuracy": 450,
 }

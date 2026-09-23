@@ -9,9 +9,10 @@ import asyncio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
 
+from ffmcp.domain.league_intel import manager_reports
 from ffmcp.domain.simulate import simulate_rest_of_season
-from ffmcp.mcp._shared import Detail, adapt_errors, app_context, load_league_state
-from ffmcp.render.tables import render_season_outcome, render_standings
+from ffmcp.mcp._shared import Detail, adapt_errors, app_context, load_history, load_league_state
+from ffmcp.render.tables import render_power_rankings, render_season_outcome, render_standings
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=True, idempotent_hint=True)
 """``idempotent_hint=True`` because the default seed is fixed: identical arguments reproduce
@@ -62,3 +63,23 @@ def register_league_standings(mcp: MCPServer) -> None:
         with adapt_errors():
             state = await load_league_state(ctx)
             return render_standings(state, detail)
+
+
+def register_power_rankings(mcp: MCPServer) -> None:
+    @mcp.tool(
+        title="Power Rankings",
+        description=(
+            "Rank teams by all-play record (every team vs every team, every week), with "
+            "each team's luck and how well its manager sets lineups."
+        ),
+        annotations=_READ_ONLY,
+        structured_output=False,
+    )
+    async def power_rankings(ctx: Context) -> str:
+        with adapt_errors():
+            state = await load_league_state(ctx)
+            history, caveat = await load_history(ctx)
+            if not history:
+                return caveat or "No completed weeks yet: power rankings start after week 1."
+            weeks = len({row.week for row in history})
+            return render_power_rankings(manager_reports(state, history), weeks)

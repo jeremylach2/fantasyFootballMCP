@@ -19,8 +19,8 @@ def register(mcp: MCPServer) -> None:
         target = f" for week {week}" if week is not None else ""
         return (
             f"Run my weekly check-in{target}. Call optimize_lineup, then analyze_matchup, then "
-            "find_waiver_targets. Summarize the three results as a single prioritized action "
-            "list of at most five items, most impactful first."
+            "find_waiver_targets, then buy_low_sell_high. Summarize the results as a single "
+            "prioritized action list of at most five items, most impactful first."
         )
 
     @mcp.prompt(
@@ -32,8 +32,9 @@ def register(mcp: MCPServer) -> None:
         focus = f" at {position}" if position else " at my weakest position"
         partner = f" with team {partner_team_id}" if partner_team_id is not None else ""
         return (
-            f"Help me fix my roster{focus}{partner}. Call league_standings to see where I stand, "
-            "then find_trades to look for options"
+            f"Help me fix my roster{focus}{partner}. Call power_rankings to see who is really "
+            "strong and who manages carelessly, buy_low_sell_high for targets whose value is "
+            "about to change, then find_trades to look for options"
             + (f" (position {position})" if position else "")
             + (f" (partner_team_id={partner_team_id})" if partner_team_id is not None else "")
             + ". Present the two best trades, and for each, draft the message I would send the "

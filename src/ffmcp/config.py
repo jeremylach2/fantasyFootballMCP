@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     espn_s2: SecretStr | None = None
     swid: SecretStr | None = None
     auth_token: SecretStr | None = None
+    odds_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("FFMCP_ODDS_API_KEY", "ODDS_API_KEY"),
+    )
+    """The Odds API key, for Vegas implied team totals. Optional: without it the game-line
+    context is simply absent. The bare ``ODDS_API_KEY`` spelling is accepted too, because that is
+    the name The Odds API's own documentation uses and the easiest one to type into ``.env``.
+    An explicit ``validation_alias`` replaces ``env_prefix`` for this one field, which is why
+    both spellings are listed rather than just the unprefixed one."""
     cache_dir: Path = Field(default=Path("~/.cache/ffmcp"))
     sims: int = 10_000
 

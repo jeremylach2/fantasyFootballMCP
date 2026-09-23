@@ -174,14 +174,28 @@ def test_render_waiver_targets_empty() -> None:
 def test_render_waiver_targets_names_a_drop_and_truncates() -> None:
     add = _player(10, "Puka Nacua", "WR", "LAR", 15.0)
     drop = _player(11, "Bench Guy", "RB", "SF", 2.0)
-    targets = [WaiverTarget(add, 3.5, drop)]
+    targets = [WaiverTarget(add, 3.5, drop, season_value=41.2)]
 
     output = render_waiver_targets(targets, "compact", limit=1, total_considered=3)
 
     assert output == (
-        "PLAYER           POS  TM  PROJ  VAL    DROP\n"
-        "P. Nacua         WR   LAR 15.0  +3.5   B. Guy\n"
+        "PLAYER           POS  TM  PROJ  VAL    ROS    DROP\n"
+        "P. Nacua         WR   LAR 15.0  +3.5   +41    B. Guy\n"
         "… 2 more (raise limit to see)"
+    )
+
+
+def test_render_waiver_targets_appends_handcuff_notes() -> None:
+    output = render_waiver_targets(
+        [],
+        "compact",
+        limit=10,
+        total_considered=0,
+        handcuffs=["J. Gibbs -> D. Montgomery (free agent, 41% snaps)"],
+    )
+    assert output == (
+        "No waiver targets clear the bar this week.\n"
+        "Handcuffs: J. Gibbs -> D. Montgomery (free agent, 41% snaps)"
     )
 
 
@@ -199,9 +213,9 @@ def test_render_waiver_targets_shows_near_misses_when_nothing_clears_the_bar() -
 
     assert output == (
         "Closest misses (would not improve your lineup):\n"
-        "PLAYER           POS  TM  PROJ  VAL    DROP\n"
-        "S. One           WR   LAR 2.0   -0.2   (no upgrade)\n"
-        "S. Two           RB   SF  1.5   -1.1   (no upgrade)"
+        "PLAYER           POS  TM  PROJ  VAL    ROS    DROP\n"
+        "S. One           WR   LAR 2.0   -0.2          (no upgrade)\n"
+        "S. Two           RB   SF  1.5   -1.1          (no upgrade)"
     )
 
 
@@ -436,26 +450,51 @@ def test_render_player_report() -> None:
         15.0,
         market=MarketSignal(percent_owned=80.0, trending_adds=500),
     )
-    output = render_player_report(player, week=3, value_over_replacement=2.5, weeks_remaining=4)
+    output = render_player_report(player, week=3, value_over_replacement=2.5, effective_weeks=4)
     assert output == (
         "Puka Nacua — WR LAR, week 3\n"
         "Projected: 15.0 pts\n"
         "Status: healthy\n"
-        "Value over replacement: +2.5 pts/wk, +10.0 pts rest of season (4 wks)\n"
+        "Value over replacement: +2.5 pts/wk, +10.0 pts rest of season (4.0 wks, byes and "
+        "playoff odds counted)\n"
         "Market: 80% owned, 500 adds (24h)"
     )
+
+
+def test_render_player_report_shows_range_second_opinion_and_bye() -> None:
+    player = _player(1, "Puka Nacua", "WR", "LAR", 15.0).model_copy(update={"bye_week": 9})
+    output = render_player_report(
+        player,
+        week=3,
+        value_over_replacement=2.5,
+        effective_weeks=4,
+        sd=6.0,
+        alternative=9.0,
+    )
+    lines = output.splitlines()
+    assert lines[1] == "Projected: 15.0 pts (range 7.3-22.7, p10-p90)"
+    assert lines[2] == "Second opinion: Sleeper 9.0; sources disagree by 40%, so the range is wider"
+    assert lines[3] == "Status: healthy · bye week 9"
+
+
+def test_render_player_report_values_a_bye_week_player_at_his_season_rate() -> None:
+    player = _player(1, "Puka Nacua", "WR", "LAR", None).model_copy(
+        update={"bye_week": 3, "season_rate": 14.2}
+    )
+    output = render_player_report(player, week=3, value_over_replacement=1.0, effective_weeks=4)
+    assert "Projected: no game this week (season rate 14.2 pts/g)" in output.splitlines()
 
 
 def test_render_player_report_status_line_is_always_present_when_healthy() -> None:
     """A healthy player still gets an explicit status, not a blank."""
     player = _player(1, "Josh Allen", "QB", "BUF", 22.0)
-    output = render_player_report(player, week=3, value_over_replacement=1.0, weeks_remaining=1)
+    output = render_player_report(player, week=3, value_over_replacement=1.0, effective_weeks=1)
     assert "Status: healthy" in output.splitlines()
 
 
 def test_render_player_report_status_line_names_the_injury() -> None:
     player = _player(1, "Saquon Barkley", "RB", "PHI", 18.0, injury_status="OUT")
-    output = render_player_report(player, week=3, value_over_replacement=1.0, weeks_remaining=1)
+    output = render_player_report(player, week=3, value_over_replacement=1.0, effective_weeks=1)
     assert "Status: Out" in output.splitlines()
 
 

@@ -25,7 +25,7 @@ def test_lineup_advice_is_cheap_when_already_optimal() -> None:
     lineup = Lineup(slots=(RosterSlot(slot="QB", player=bench),), projected_points=20.0)
 
     advice = build_lineup_advice(
-        week=3, current=lineup, optimal=lineup, win_prob_delta=0.0, swaps=[]
+        week=3, current=lineup, optimal=lineup, playoff_odds_delta=0.0, swaps=[]
     )
 
     assert advice.swaps == []
@@ -42,7 +42,7 @@ def test_lineup_advice_caveats_one_per_injury_status() -> None:
     )
 
     advice = build_lineup_advice(
-        week=3, current=lineup, optimal=lineup, win_prob_delta=0.0, swaps=[]
+        week=3, current=lineup, optimal=lineup, playoff_odds_delta=0.0, swaps=[]
     )
 
     assert advice.caveats == ["Questionable: Puka Nacua — check inactives"]
@@ -54,7 +54,7 @@ def test_lineup_advice_has_no_actual_section_without_live_data() -> None:
         projected_points=20.0,
     )
     advice = build_lineup_advice(
-        week=8, current=lineup, optimal=lineup, win_prob_delta=0.0, swaps=[]
+        week=8, current=lineup, optimal=lineup, playoff_odds_delta=0.0, swaps=[]
     )
     assert advice.actual is None
 
@@ -75,7 +75,7 @@ def test_lineup_advice_actual_section_reports_the_live_recap() -> None:
         week=8,
         current=actual_current,
         optimal=actual_current,
-        win_prob_delta=0.0,
+        playoff_odds_delta=0.0,
         swaps=[],
         actual_current=actual_current,
         actual_optimal=actual_optimal,

@@ -14,11 +14,16 @@ _SWID_RE = re.compile(
 )
 _ESPN_S2_RE = re.compile(r"(espn_s2=)[^\s&;\"']+", re.IGNORECASE)
 _COOKIE_HEADER_RE = re.compile(r"(?im)^Cookie:.*$")
+_API_KEY_PARAM_RE = re.compile(r"(apiKey=)[^\s&;\"']+", re.IGNORECASE)
+"""The Odds API takes its key as a query parameter, so any error that echoes a request URL
+(``httpx2`` includes it in ``HTTPStatusError``) would carry the key with it."""
 
 
 def redact(text: str) -> str:
-    """Strip ``espn_s2``, ``SWID``, and ``Cookie`` headers out of a string."""
+    """Strip ``espn_s2``, ``SWID``, ``Cookie`` headers and ``apiKey`` parameters out of a
+    string."""
     text = _COOKIE_HEADER_RE.sub("Cookie: [REDACTED]", text)
+    text = _API_KEY_PARAM_RE.sub(r"\1[REDACTED]", text)
     text = _ESPN_S2_RE.sub(r"\1[REDACTED]", text)
     text = _SWID_RE.sub("[REDACTED]", text)
     return text
