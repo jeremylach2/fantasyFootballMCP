@@ -34,6 +34,8 @@ CALLS: tuple[tuple[str, dict[str, object]], ...] = (
     ("compare_players", {"names": ["Dominic Okafor", "Elijah Villanueva"]}),
     ("projection_accuracy", {}),
     ("optimize_lineup", {"objective": "points"}),
+    ("roster_planner", {}),
+    ("league_activity", {}),
 )
 
 
@@ -65,7 +67,7 @@ async def test_team_roster_template_is_readable() -> None:
         detailed = await client.read_resource("ffmcp://team/2/roster?detail=full")
 
     assert "Team Bravo" in _text(result.contents)
-    assert "TREND" in _text(detailed.contents)
+    assert "ADD/24H" in _text(detailed.contents)
 
 
 async def test_every_prompt_returns_a_message() -> None:

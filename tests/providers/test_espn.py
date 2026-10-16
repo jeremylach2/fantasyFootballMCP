@@ -9,6 +9,8 @@ network.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, ClassVar
 
 import pytest
@@ -16,6 +18,7 @@ from espn_api.requests.espn_requests import ESPNAccessDenied, ESPNInvalidLeague,
 
 import ffmcp.providers.espn as espn_module
 from ffmcp.errors import CredentialsMissing, LeagueNotAccessible, UpstreamUnavailable
+from ffmcp.providers.cache import Cache
 from ffmcp.providers.espn import EspnLeagueProvider
 
 
@@ -53,7 +56,7 @@ class FakePlayer:
 class FakeTeam:
     def __init__(self, team_id: int, roster: list[FakePlayer]) -> None:
         self.team_id = team_id
-        self.team_name = f"Team {team_id}"
+        self.team_name = f"Team {team_id}  "  # ESPN names can carry trailing whitespace
         self.team_abbrev = f"T{team_id}"
         self.wins = 2
         self.losses = 1
@@ -70,6 +73,12 @@ class FakeSettings:
     reg_season_count = 14
     position_slot_counts: ClassVar[dict[str, int]] = {"QB": 1, "BE": 2}
     scoring_type = "PPR"
+    median_scoring = True
+    division_map: ClassVar[dict[int, str]] = {0: "East", 1: "West"}
+    playoff_seed_tie_rule = "TOTAL_POINTS_SCORED"
+    faab = True
+    acquisition_budget = 100
+    trade_deadline = 1796230800000
 
 
 class FakeBoxScore:
@@ -83,26 +92,23 @@ class FakeBoxScore:
         self.is_playoff = False
 
 
-class FakeTeamRef:
-    """Stands in for the ``Team`` objects ``League.scoreboard()`` attaches to a matchup."""
+class FakeRequests:
+    """Stands in for ``League.espn_request``: the raw ``mMatchupScore`` schedule, counting how
+    often it is asked for."""
 
-    def __init__(self, team_id: int) -> None:
-        self.team_id = team_id
+    calls = 0
+    schedule: ClassVar[list[dict[str, Any]]] = [
+        # Deliberately a different week-6 pairing from box_scores(), so a test can tell which
+        # one get_matchups actually read.
+        {"matchupPeriodId": 6, "home": {"teamId": 1}, "away": {"teamId": 3}},
+        {"matchupPeriodId": 7, "home": {"teamId": 1}},  # a bye: no away side at all
+        {"matchupPeriodId": 15, "home": {"teamId": 1}, "playoffTierType": "WINNERS_BRACKET"},
+    ]
 
-
-class FakeScheduledMatchup:
-    """Stands in for ``espn_api.football.matchup.Matchup`` as returned by ``scoreboard()``.
-    ``home_team``/``away_team`` are absent entirely (not ``None``) for a bye, matching the real
-    class, which only assigns them inside a loop that runs when a team actually matches."""
-
-    def __init__(self, home_team_id: int | None, away_team_id: int | None) -> None:
-        if home_team_id is not None:
-            self.home_team = FakeTeamRef(home_team_id)
-        if away_team_id is not None:
-            self.away_team = FakeTeamRef(away_team_id)
-        self.home_score = 0.0
-        self.away_score = 0.0
-        self.is_playoff = False
+    def league_get(self, params: dict[str, str]) -> dict[str, Any]:
+        assert params == {"view": "mMatchupScore"}
+        FakeRequests.calls += 1
+        return {"schedule": self.schedule}
 
 
 QB = FakePlayer(
@@ -120,6 +126,8 @@ BENCH_RB = FakePlayer(2, "RB One", "RB", ["RB", "RB/WR/TE"], "SF", lineup_slot="
 IR_WR = FakePlayer(
     3, "WR One", "WR", ["WR"], "DAL", lineup_slot="IR", injured=True, injury_status="OUT"
 )
+RELEASED = FakePlayer(4, "Cut Back", "RB", ["RB"], "None")
+"""A free agent no NFL team employs: ESPN reports his team as the string ``"None"``."""
 
 
 class FakeLeague:
@@ -129,17 +137,16 @@ class FakeLeague:
         self.current_week = 3
         self.settings = FakeSettings()
         self.teams = [FakeTeam(1, [QB, BENCH_RB, IR_WR])]
+        self.espn_request = FakeRequests()
+
+    free_agent_calls = 0
 
     def box_scores(self, week: int) -> list[FakeBoxScore]:
         return [FakeBoxScore(1, 2)]
 
-    def scoreboard(self, week: int) -> list[FakeScheduledMatchup]:
-        # Deliberately a different pairing from box_scores(), so a test can tell which one
-        # get_matchups actually called.
-        return [FakeScheduledMatchup(1, 3)]
-
     def free_agents(self, week: int, size: int, position: str | None) -> list[FakePlayer]:
-        agents = [QB]
+        FakeLeague.free_agent_calls += 1
+        agents = [QB, RELEASED]
         if position is not None:
             agents = [p for p in agents if p.position == position]
         return agents[:size]
@@ -192,28 +199,46 @@ async def test_get_matchups_for_a_played_week_uses_box_scores() -> None:
     assert matchups[0].home_projected == 105.0
 
 
-async def test_get_matchups_for_a_future_week_uses_scoreboard_not_box_scores() -> None:
+async def test_get_matchups_for_a_future_week_reads_the_schedule_not_box_scores() -> None:
     # week > current_week (3): box_scores() silently returns the current week's pairing
-    # relabeled, so get_matchups must fall back to scoreboard() instead. FakeLeague's two
-    # methods return different pairings precisely so this distinguishes them.
+    # relabeled, so get_matchups must read the season schedule instead. The two return
+    # different pairings precisely so this distinguishes them.
     matchups = await _provider().get_matchups(6)
     assert (matchups[0].home_team_id, matchups[0].away_team_id) == (1, 3)
     assert matchups[0].week == 6
     assert matchups[0].home_projected == 0.0
 
 
-async def test_get_matchups_for_a_future_bye_has_no_opponent(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    # scoreboard() only sets home_team/away_team when a team actually matched; a bye leaves
-    # the attribute absent rather than None, and _map_scheduled_matchup must handle that
-    # rather than raising AttributeError.
-    monkeypatch.setattr(
-        FakeLeague, "scoreboard", lambda self, week: [FakeScheduledMatchup(1, None)]
-    )
-    matchups = await _provider().get_matchups(6)
+async def test_get_matchups_for_a_future_bye_has_no_opponent() -> None:
+    matchups = await _provider().get_matchups(7)
     assert matchups[0].home_team_id == 1
     assert matchups[0].away_team_id is None
+    assert not matchups[0].is_playoff
+    assert (await _provider().get_matchups(15))[0].is_playoff
+
+
+async def test_the_season_schedule_is_fetched_once_for_every_remaining_week(
+    tmp_path: Path,
+) -> None:
+    # Before: one full-schedule download per remaining week, on every season-long tool call.
+    FakeRequests.calls = 0
+    provider = EspnLeagueProvider(
+        league_id=1234567, season=2026, espn_s2=None, swid=None, cache=Cache(tmp_path)
+    )
+    for week in range(4, 15):
+        await provider.get_matchups(week)
+    assert FakeRequests.calls == 1
+
+
+async def test_free_agent_lists_are_cached(tmp_path: Path) -> None:
+    FakeLeague.free_agent_calls = 0
+    provider = EspnLeagueProvider(
+        league_id=1234567, season=2026, espn_s2=None, swid=None, cache=Cache(tmp_path)
+    )
+    first = await provider.get_free_agents(3, size=50)
+    second = await provider.get_free_agents(3, size=50)
+    assert first == second
+    assert FakeLeague.free_agent_calls == 1
 
 
 async def test_missing_season_is_resolved_lazily_on_first_use() -> None:
@@ -255,10 +280,42 @@ async def test_get_teams_leaves_market_none_when_espn_reports_no_ownership_data(
 
 
 async def test_get_free_agents_filters_by_position() -> None:
-    agents = await _provider().get_free_agents(3, position="RB")
+    agents = await _provider().get_free_agents(3, position="TE")
     assert agents == []
     agents = await _provider().get_free_agents(3, position="QB")
     assert [p.name for p in agents] == ["QB One"]
+
+
+async def test_a_released_player_is_on_team_fa_not_team_none() -> None:
+    agents = await _provider().get_free_agents(3, position="RB")
+    assert [(p.name, p.pro_team) for p in agents] == [("Cut Back", "FA")]
+
+
+async def test_team_names_are_stripped_of_trailing_whitespace() -> None:
+    teams = await _provider().get_teams()
+    assert teams[0].name == "Team 1"
+
+
+async def test_settings_carry_the_league_format_the_simulation_must_respect() -> None:
+    settings = await _provider().get_settings()
+    assert settings.median_scoring is True
+    assert settings.division_count == 2
+    assert settings.waiver_budget == 100
+    assert settings.trade_deadline == datetime.fromtimestamp(1796230800, UTC)
+
+
+async def test_a_failed_refresh_keeps_serving_the_last_good_league(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _provider()
+    assert await provider.get_current_week() == 3
+
+    def raise_unknown(*args: Any, **kwargs: Any) -> FakeLeague:
+        raise ESPNUnknownError("HTTP 503")
+
+    monkeypatch.setattr(espn_module, "League", raise_unknown)
+    provider._league_built_at = -1e9  # force the handle stale
+    assert await provider.get_current_week() == 3
 
 
 async def test_access_denied_without_credentials_raises_credentials_missing(
@@ -313,7 +370,39 @@ def test_healthy_statuses_are_not_injury_designations() -> None:
     assert espn_module._injury_status("ACTIVE") is None
     assert espn_module._injury_status("NORMAL") is None
     assert espn_module._injury_status("") is None
+    assert espn_module._injury_status([]) is None  # what team defenses report
     assert espn_module._injury_status("QUESTIONABLE") == "QUESTIONABLE"
+
+
+def test_kickoffs_are_read_from_rostered_schedules_as_true_instants() -> None:
+    from types import SimpleNamespace
+
+    local_kickoff = datetime(2026, 10, 18, 12, 0)  # naive local, as espn-api builds it
+    player = SimpleNamespace(proTeam="PHI", schedule={6: {"team": "CAR", "date": local_kickoff}})
+    on_bye = SimpleNamespace(proTeam="CIN", schedule={5: {"team": "PIT", "date": local_kickoff}})
+    league = SimpleNamespace(teams=[SimpleNamespace(roster=[player, on_bye])])
+    kickoffs = espn_module._kickoffs_by_team(league, 6)
+    assert kickoffs == {"PHI": local_kickoff.astimezone(UTC)}
+    assert kickoffs["PHI"].tzinfo is not None
+
+
+def test_activity_becomes_one_transaction_per_player_moved() -> None:
+    topic = {
+        "date": 1792106137135,
+        "messages": [
+            {"messageTypeId": 178, "to": 12, "targetId": -16029},
+            {"messageTypeId": 179, "to": 12, "targetId": -16019},
+            {"messageTypeId": 239, "for": 12, "targetId": 4039},
+            {"messageTypeId": 999, "to": 12, "targetId": 1},  # not a transaction
+        ],
+    }
+    names = {-16029: "Panthers D/ST", -16019: "Giants D/ST"}
+    transactions = espn_module._map_activity(topic, names)
+    assert [(t.team_id, t.action, t.player_name) for t in transactions] == [
+        (12, "add", "Panthers D/ST"),
+        (12, "drop", "Giants D/ST"),
+        (12, "drop", "4039"),  # an id the map does not know still says who moved
+    ]
 
 
 def test_reception_points_come_from_the_leagues_scoring_items() -> None:

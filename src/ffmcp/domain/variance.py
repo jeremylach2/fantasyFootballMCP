@@ -29,6 +29,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 from ffmcp.domain.models import Player
+from ffmcp.domain.optimizer import is_game_time_decision, projected_points
 
 POSITION_SD_FRACTION: Mapping[str, float] = {
     "QB": 0.47,
@@ -61,6 +62,14 @@ TYPICAL_DISAGREEMENT = 0.08
 around it, so a typical player keeps his position's sd and only unusual disputes move it."""
 
 _MAX_DISAGREEMENT = 1.0
+"""Relative disagreement beyond which the multiplier stops growing, and beyond which a
+percentage stops meaning anything (10.7 against 0 is not "1,070%" more likely to be wrong)."""
+
+ZEROED_BELOW = 1.0
+"""A primary projection under this many points is ESPN expecting the player not to play."""
+
+EXPECTED_TO_PLAY = 3.0
+"""A second source projecting at least this many points expects him to play."""
 
 _Z_P10 = 1.2815515655446004
 """Standard-normal quantile for the 10th/90th percentiles used as floor and ceiling."""
@@ -73,6 +82,23 @@ def disagreement(primary: float | None, secondary: float | None) -> float | None
     if primary is None or secondary is None:
         return None
     return abs(primary - secondary) / max(primary, 1.0)
+
+
+def sharp_disagreement(relative_gap: float | None) -> bool:
+    """Whether two sources disagree by more than a percentage can usefully express."""
+    return relative_gap is not None and relative_gap >= _MAX_DISAGREEMENT
+
+
+def expected_out_by_primary(primary: float | None, secondary: float | None) -> bool:
+    """ESPN has zeroed a player (a game-time decision it expects him to miss) while the second
+    source expects him to play: the one disagreement that is about availability rather than
+    production, and needs saying in words, not a range."""
+    return (
+        primary is not None
+        and secondary is not None
+        and primary < ZEROED_BELOW
+        and secondary >= EXPECTED_TO_PLAY
+    )
 
 
 def disagreement_multiplier(relative_gap: float | None) -> float:
@@ -104,17 +130,23 @@ def player_sds(
 ) -> dict[int, float]:
     """``{player_id: sd}`` for every player with a projection this week: the map
     ``domain.simulate`` and ``domain.risk`` consume. ``projections`` overrides each player's
-    attached projection, as everywhere else in ``domain/``."""
+    attached projection, as everywhere else in ``domain/``.
+
+    A projection of zero cannot carry its own uncertainty: a sd proportional to zero is the
+    floor, so a questionable player ESPN zeroed and Sleeper projects for 10.7 came out with a
+    range of 0 to 2.6, as if his not playing were certain. When the primary source has zeroed a
+    player the second expects to play, his spread is scaled from the second source's number
+    instead."""
     result: dict[int, float] = {}
     for player in players:
-        if projections is not None:
-            points = projections.get(player.player_id)
-        else:
-            points = player.projection.points if player.projection is not None else None
+        points = projected_points(player, projections)
         if points is None:
             continue
-        gap = disagreement(points, alternative.get(player.player_id)) if alternative else None
-        result[player.player_id] = player_sd(player, points, relative_gap=gap)
+        other = alternative.get(player.player_id) if alternative else None
+        gap = disagreement(points, other)
+        undecided = is_game_time_decision(player) and expected_out_by_primary(points, other)
+        base = other if other is not None and undecided else points
+        result[player.player_id] = player_sd(player, base, relative_gap=gap)
     return result
 
 

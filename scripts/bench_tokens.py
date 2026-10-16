@@ -26,10 +26,13 @@ import argparse
 import asyncio
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 os.environ["FFMCP_MODE"] = "demo"
 os.environ.setdefault("FFMCP_TEAM_ID", "1")
+# A fresh cache: the simulation is cached on disk, and a benchmark must not read a stale one.
+os.environ["FFMCP_CACHE_DIR"] = tempfile.mkdtemp(prefix="ffmcp-bench-")
 
 from ffmcp.budgets import TOKEN_BUDGETS
 from ffmcp.server import build_server
@@ -71,10 +74,12 @@ ROWS: tuple[tuple[str, str, dict[str, object], str], ...] = (
         {"detail": "full", "limit": 25},
         "find_waiver_targets:full",
     ),
+    ("roster_planner", "roster_planner", {}, "roster_planner"),
     ("buy_low_sell_high", "buy_low_sell_high", {}, "buy_low_sell_high"),
     ("simulate_season", "simulate_season", {"n_sims": 2000}, "simulate_season"),
     ("league_standings", "league_standings", {}, "league_standings:compact"),
     ("power_rankings", "power_rankings", {}, "power_rankings"),
+    ("league_activity", "league_activity", {}, "league_activity"),
     ("player_report", "player_report", {"name": "Caleb Fairbanks"}, "player_report"),
     (
         "compare_players",

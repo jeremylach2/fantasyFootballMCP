@@ -264,3 +264,51 @@ def test_optimize_matches_exhaustive_search_on_small_random_instances() -> None:
             for i in range(1, rng.randint(2, 7) + 1)
         ]
         assert optimize(roster, slots).projected_points == round(brute_force_best(roster, slots), 4)
+
+
+# --- Byes and lineup locks ------------------------------------------------------------------
+
+
+def test_a_zero_projection_in_his_own_bye_week_is_no_game() -> None:
+    """ESPN projects a player on bye for 0.0, not nothing."""
+    on_bye = Player(
+        player_id=1,
+        name="Bye Guy",
+        position="WR",
+        eligible_slots=("WR",),
+        pro_team="MIN",
+        projection=Projection(week=6, points=0.0),
+        bye_week=6,
+    )
+    assert projected_points(on_bye) is None
+    assert projected_points(on_bye.model_copy(update={"bye_week": 7})) == 0.0
+    assert optimize([on_bye], ("WR",)).unavailable == (on_bye,)
+
+
+def _wr(player_id: int, points: float) -> Player:
+    return Player(
+        player_id=player_id,
+        name=f"WR{player_id}",
+        position="WR",
+        eligible_slots=("WR", "RB/WR/TE"),
+        pro_team="DET",
+        projection=Projection(week=1, points=points),
+    )
+
+
+def test_a_locked_starter_keeps_his_slot_and_a_locked_bench_player_stays_benched() -> None:
+    slots = ("WR", "RB/WR/TE")
+    started, better, benched_star = _wr(1, 5.0), _wr(2, 12.0), _wr(3, 20.0)
+    free = optimize([started, better, benched_star], slots)
+    assert {p.player_id for p in free.started} == {2, 3}
+
+    locked = optimize([started, better, benched_star], slots, pinned={1: 0}, frozen={3})
+    assert [s.player.player_id for s in locked.slots if s.player] == [1, 2]
+    assert locked.projected_points == 17.0  # the pin bonus never leaks into points
+
+
+def test_a_locked_starter_who_is_out_still_holds_his_slot() -> None:
+    out = _wr(1, 0.0).model_copy(update={"injury_status": "OUT", "injured": True})
+    lineup = optimize([out, _wr(2, 12.0)], ("WR",), pinned={1: 0})
+    assert lineup.slots[0].player == out
+    assert lineup.projected_points == 0.0

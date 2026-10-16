@@ -9,7 +9,7 @@ import httpx2
 import pytest
 
 from ffmcp.providers.cache import Cache
-from ffmcp.providers.odds import OddsApiProvider, game_lines_from_events
+from ffmcp.providers.odds import OddsApiProvider, game_lines_by_team, game_lines_from_events
 
 
 def _event(
@@ -78,3 +78,14 @@ async def test_without_a_key_nothing_is_fetched(tmp_path: Path) -> None:
     async with httpx2.AsyncClient(transport=httpx2.MockTransport(refuse)) as client:
         provider = OddsApiProvider(client, Cache(tmp_path), api_key=None)
         assert await provider.get_game_lines() == {}
+
+
+def test_every_posted_game_is_kept_soonest_first_for_look_ahead() -> None:
+    by_team = game_lines_by_team(
+        [
+            _event("Detroit Lions", "Chicago Bears", [-3.0], [45.0], "2026-10-25T17:00:00Z"),
+            _event("Detroit Lions", "New York Jets", [-7.0], [44.0], "2026-10-18T17:00:00Z"),
+        ]
+    )
+    assert [line.opponent for line in by_team["DET"]] == ["NYJ", "CHI"]
+    assert [line.opponent for line in by_team["CHI"]] == ["DET"]

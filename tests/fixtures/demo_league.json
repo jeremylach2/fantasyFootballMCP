@@ -16,7 +16,14 @@
       "BE": 6,
       "IR": 1
     },
-    "scoring_type": "PPR"
+    "scoring_type": "PPR",
+    "reception_points": 1.0,
+    "playoff_round_weeks": 1,
+    "median_scoring": false,
+    "division_count": 1,
+    "playoff_seed_tie_rule": null,
+    "waiver_budget": null,
+    "trade_deadline": null
   },
   "current_week": 8,
   "teams": [
@@ -30,7 +37,7 @@
       "points_for": 677.0,
       "points_against": 768.5,
       "standing": 6,
-      "playoff_pct": 3.2,
+      "playoff_pct": 5.7,
       "roster": {
         "slots": [
           {
@@ -50,7 +57,8 @@
                 "points": 22.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -71,7 +79,8 @@
                 "points": 11.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -92,7 +101,8 @@
                 "points": 9.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -108,8 +118,13 @@
               "pro_team": "SEA",
               "injured": false,
               "injury_status": null,
-              "projection": null,
-              "market": null
+              "projection": {
+                "week": 8,
+                "points": 0.0,
+                "source": "espn"
+              },
+              "market": null,
+              "bye_week": 8
             }
           },
           {
@@ -131,6 +146,7 @@
                 "source": "espn"
               },
               "market": null,
+              "bye_week": null,
               "live_points": 2.4
             }
           },
@@ -152,7 +168,8 @@
                 "points": 13.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -173,7 +190,8 @@
                 "points": 6.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -193,7 +211,8 @@
                 "points": 6.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -213,7 +232,8 @@
                 "points": 8.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -233,7 +253,8 @@
               "points": 19.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2002,
@@ -251,7 +272,8 @@
               "points": 6.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2006,
@@ -269,7 +291,8 @@
               "points": 8.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2009,
@@ -287,7 +310,8 @@
               "points": 10.7,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2010,
@@ -306,6 +330,7 @@
               "source": "espn"
             },
             "market": null,
+            "bye_week": null,
             "live_points": 29.1
           },
           {
@@ -324,7 +349,8 @@
               "points": 6.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -344,7 +370,8 @@
               "points": 5.2,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ]
       }
@@ -359,7 +386,7 @@
       "points_for": 824.3,
       "points_against": 782.5,
       "standing": 2,
-      "playoff_pct": 92.7,
+      "playoff_pct": 89.6,
       "roster": {
         "slots": [
           {
@@ -379,7 +406,8 @@
                 "points": 12.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -400,7 +428,8 @@
                 "points": 18.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -421,7 +450,8 @@
                 "points": 16.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -442,7 +472,8 @@
                 "points": 15.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -463,7 +494,8 @@
                 "points": 13.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -484,7 +516,8 @@
                 "points": 11.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -505,7 +538,8 @@
                 "points": 15.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -525,7 +559,8 @@
                 "points": 8.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -545,7 +580,8 @@
                 "points": 8.3,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -565,7 +601,8 @@
               "points": 8.1,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2105,
@@ -583,7 +620,8 @@
               "points": 7.8,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2106,
@@ -601,7 +639,8 @@
               "points": 5.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2109,
@@ -619,7 +658,8 @@
               "points": 11.5,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2110,
@@ -637,7 +677,8 @@
               "points": 8.6,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2113,
@@ -655,7 +696,8 @@
               "points": 5.7,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -670,8 +712,13 @@
             "pro_team": "CLE",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -686,7 +733,7 @@
       "points_for": 768.6,
       "points_against": 753.0,
       "standing": 5,
-      "playoff_pct": 51.4,
+      "playoff_pct": 53.3,
       "roster": {
         "slots": [
           {
@@ -706,7 +753,8 @@
                 "points": 23.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -727,7 +775,8 @@
                 "points": 14.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -748,7 +797,8 @@
                 "points": 11.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -769,7 +819,8 @@
                 "points": 19.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -790,7 +841,8 @@
                 "points": 16.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -811,7 +863,8 @@
                 "points": 8.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -832,7 +885,8 @@
                 "points": 12.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -852,7 +906,8 @@
                 "points": 8.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -872,7 +927,8 @@
                 "points": 7.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -892,7 +948,8 @@
               "points": 14.7,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2205,
@@ -910,7 +967,8 @@
               "points": 9.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2206,
@@ -928,7 +986,8 @@
               "points": 6.1,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2210,
@@ -946,7 +1005,8 @@
               "points": 9.7,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2211,
@@ -964,7 +1024,8 @@
               "points": 7.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2212,
@@ -977,8 +1038,13 @@
             "pro_team": "LV",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ],
         "ir": [
@@ -993,8 +1059,13 @@
             "pro_team": "CLE",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -1009,7 +1080,7 @@
       "points_for": 655.3,
       "points_against": 752.7,
       "standing": 10,
-      "playoff_pct": 0.1,
+      "playoff_pct": 0.4,
       "roster": {
         "slots": [
           {
@@ -1029,7 +1100,8 @@
                 "points": 18.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1050,7 +1122,8 @@
                 "points": 13.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1071,7 +1144,8 @@
                 "points": 11.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1092,7 +1166,8 @@
                 "points": 15.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1113,7 +1188,8 @@
                 "points": 11.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1134,7 +1210,8 @@
                 "points": 10.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1155,7 +1232,8 @@
                 "points": 10.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1175,7 +1253,8 @@
                 "points": 7.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1195,7 +1274,8 @@
                 "points": 8.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -1210,8 +1290,13 @@
             "pro_team": "SEA",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           },
           {
             "player_id": 2304,
@@ -1229,7 +1314,8 @@
               "points": 8.7,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2305,
@@ -1247,7 +1333,8 @@
               "points": 7.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2306,
@@ -1265,7 +1352,8 @@
               "points": 6.1,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2310,
@@ -1283,7 +1371,8 @@
               "points": 8.1,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2313,
@@ -1301,7 +1390,8 @@
               "points": 6.2,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -1321,7 +1411,8 @@
               "points": 6.0,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ]
       }
@@ -1336,7 +1427,7 @@
       "points_for": 887.0,
       "points_against": 759.9,
       "standing": 1,
-      "playoff_pct": 96.6,
+      "playoff_pct": 95.3,
       "roster": {
         "slots": [
           {
@@ -1356,7 +1447,8 @@
                 "points": 22.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1377,7 +1469,8 @@
                 "points": 14.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1398,7 +1491,8 @@
                 "points": 10.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1419,7 +1513,8 @@
                 "points": 18.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1440,7 +1535,8 @@
                 "points": 15.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1461,7 +1557,8 @@
                 "points": 11.3,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1482,7 +1579,8 @@
                 "points": 13.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1502,7 +1600,8 @@
                 "points": 10.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1522,7 +1621,8 @@
                 "points": 9.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -1542,7 +1642,8 @@
               "points": 15.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2405,
@@ -1560,7 +1661,8 @@
               "points": 8.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2406,
@@ -1578,7 +1680,8 @@
               "points": 8.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2410,
@@ -1591,8 +1694,13 @@
             "pro_team": "LV",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           },
           {
             "player_id": 2411,
@@ -1610,7 +1718,8 @@
               "points": 6.2,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2413,
@@ -1628,7 +1737,8 @@
               "points": 6.5,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -1643,8 +1753,13 @@
             "pro_team": "SEA",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -1659,7 +1774,7 @@
       "points_for": 806.4,
       "points_against": 704.6,
       "standing": 3,
-      "playoff_pct": 85.3,
+      "playoff_pct": 83.2,
       "roster": {
         "slots": [
           {
@@ -1679,7 +1794,8 @@
                 "points": 22.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1700,7 +1816,8 @@
                 "points": 18.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1721,7 +1838,8 @@
                 "points": 13.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1742,7 +1860,8 @@
                 "points": 18.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1763,7 +1882,8 @@
                 "points": 14.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1784,7 +1904,8 @@
                 "points": 12.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1805,7 +1926,8 @@
                 "points": 9.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1825,7 +1947,8 @@
                 "points": 8.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -1845,7 +1968,8 @@
                 "points": 7.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -1860,8 +1984,13 @@
             "pro_team": "SEA",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           },
           {
             "player_id": 2504,
@@ -1874,8 +2003,13 @@
             "pro_team": "TB",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           },
           {
             "player_id": 2505,
@@ -1893,7 +2027,8 @@
               "points": 8.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2506,
@@ -1911,7 +2046,8 @@
               "points": 5.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2511,
@@ -1929,7 +2065,8 @@
               "points": 7.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2513,
@@ -1947,7 +2084,8 @@
               "points": 6.5,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -1962,8 +2100,13 @@
             "pro_team": "CLE",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -1998,7 +2141,8 @@
                 "points": 18.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2019,7 +2163,8 @@
                 "points": 13.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2040,7 +2185,8 @@
                 "points": 9.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2061,7 +2207,8 @@
                 "points": 15.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2082,7 +2229,8 @@
                 "points": 12.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2103,7 +2251,8 @@
                 "points": 10.3,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2124,7 +2273,8 @@
                 "points": 10.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2139,8 +2289,13 @@
               "pro_team": "TB",
               "injured": false,
               "injury_status": null,
-              "projection": null,
-              "market": null
+              "projection": {
+                "week": 8,
+                "points": 0.0,
+                "source": "espn"
+              },
+              "market": null,
+              "bye_week": 8
             }
           },
           {
@@ -2160,7 +2315,8 @@
                 "points": 7.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -2180,7 +2336,8 @@
               "points": 11.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2605,
@@ -2198,7 +2355,8 @@
               "points": 7.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2606,
@@ -2216,7 +2374,8 @@
               "points": 6.0,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2610,
@@ -2234,7 +2393,8 @@
               "points": 7.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2611,
@@ -2252,7 +2412,8 @@
               "points": 5.8,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2613,
@@ -2270,7 +2431,8 @@
               "points": 6.8,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -2285,8 +2447,13 @@
             "pro_team": "SEA",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -2301,7 +2468,7 @@
       "points_for": 802.5,
       "points_against": 719.1,
       "standing": 4,
-      "playoff_pct": 57.4,
+      "playoff_pct": 52.2,
       "roster": {
         "slots": [
           {
@@ -2321,7 +2488,8 @@
                 "points": 19.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2342,7 +2510,8 @@
                 "points": 14.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2363,7 +2532,8 @@
                 "points": 12.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2384,7 +2554,8 @@
                 "points": 14.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2405,7 +2576,8 @@
                 "points": 13.3,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2426,7 +2598,8 @@
                 "points": 10.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2447,7 +2620,8 @@
                 "points": 10.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2467,7 +2641,8 @@
                 "points": 7.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2487,7 +2662,8 @@
                 "points": 8.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -2507,7 +2683,8 @@
               "points": 11.4,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2704,
@@ -2525,7 +2702,8 @@
               "points": 10.2,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2705,
@@ -2543,7 +2721,8 @@
               "points": 8.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2706,
@@ -2561,7 +2740,8 @@
               "points": 5.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2711,
@@ -2579,7 +2759,8 @@
               "points": 4.8,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2713,
@@ -2597,7 +2778,8 @@
               "points": 5.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -2612,8 +2794,13 @@
             "pro_team": "LV",
             "injured": true,
             "injury_status": "INJURY_RESERVE",
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           }
         ]
       }
@@ -2628,7 +2815,7 @@
       "points_for": 779.1,
       "points_against": 836.7,
       "standing": 7,
-      "playoff_pct": 8.3,
+      "playoff_pct": 12.6,
       "roster": {
         "slots": [
           {
@@ -2648,7 +2835,8 @@
                 "points": 21.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2669,7 +2857,8 @@
                 "points": 17.0,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2690,7 +2879,8 @@
                 "points": 15.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2711,7 +2901,8 @@
                 "points": 17.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2732,7 +2923,8 @@
                 "points": 15.1,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2753,7 +2945,8 @@
                 "points": 12.4,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2774,7 +2967,8 @@
                 "points": 11.8,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2794,7 +2988,8 @@
                 "points": 8.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2809,8 +3004,13 @@
               "pro_team": "TB",
               "injured": false,
               "injury_status": null,
-              "projection": null,
-              "market": null
+              "projection": {
+                "week": 8,
+                "points": 0.0,
+                "source": "espn"
+              },
+              "market": null,
+              "bye_week": 8
             }
           }
         ],
@@ -2830,7 +3030,8 @@
               "points": 15.1,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2805,
@@ -2848,7 +3049,8 @@
               "points": 9.0,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2809,
@@ -2866,7 +3068,8 @@
               "points": 11.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2810,
@@ -2884,7 +3087,8 @@
               "points": 8.2,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2811,
@@ -2902,7 +3106,8 @@
               "points": 7.5,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2813,
@@ -2920,7 +3125,8 @@
               "points": 7.0,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -2940,7 +3146,8 @@
               "points": 5.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ]
       }
@@ -2955,7 +3162,7 @@
       "points_for": 715.4,
       "points_against": 745.5,
       "standing": 8,
-      "playoff_pct": 4.9,
+      "playoff_pct": 7.6,
       "roster": {
         "slots": [
           {
@@ -2975,7 +3182,8 @@
                 "points": 19.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -2996,7 +3204,8 @@
                 "points": 15.9,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3017,7 +3226,8 @@
                 "points": 11.7,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3038,7 +3248,8 @@
                 "points": 15.3,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3059,7 +3270,8 @@
                 "points": 13.6,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3080,7 +3292,8 @@
                 "points": 11.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3101,7 +3314,8 @@
                 "points": 12.2,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3121,7 +3335,8 @@
                 "points": 6.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           },
           {
@@ -3141,7 +3356,8 @@
                 "points": 9.5,
                 "source": "espn"
               },
-              "market": null
+              "market": null,
+              "bye_week": null
             }
           }
         ],
@@ -3156,8 +3372,13 @@
             "pro_team": "LV",
             "injured": false,
             "injury_status": null,
-            "projection": null,
-            "market": null
+            "projection": {
+              "week": 8,
+              "points": 0.0,
+              "source": "espn"
+            },
+            "market": null,
+            "bye_week": 8
           },
           {
             "player_id": 2904,
@@ -3175,7 +3396,8 @@
               "points": 10.6,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2905,
@@ -3193,7 +3415,8 @@
               "points": 9.0,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2906,
@@ -3211,7 +3434,8 @@
               "points": 6.3,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2910,
@@ -3229,7 +3453,8 @@
               "points": 7.9,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           },
           {
             "player_id": 2913,
@@ -3247,7 +3472,8 @@
               "points": 5.8,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ],
         "ir": [
@@ -3267,7 +3493,8 @@
               "points": 4.6,
               "source": "espn"
             },
-            "market": null
+            "market": null,
+            "bye_week": null
           }
         ]
       }
@@ -4021,7 +4248,8 @@
           "points": 12.4,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9001,
@@ -4039,7 +4267,8 @@
           "points": 7.1,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9002,
@@ -4057,7 +4286,8 @@
           "points": 5.8,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9003,
@@ -4075,7 +4305,8 @@
           "points": 4.2,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9004,
@@ -4093,7 +4324,8 @@
           "points": 13.1,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9005,
@@ -4111,7 +4343,8 @@
           "points": 10.6,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9006,
@@ -4129,7 +4362,8 @@
           "points": 6.4,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9007,
@@ -4147,7 +4381,8 @@
           "points": 5.1,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9008,
@@ -4165,7 +4400,8 @@
           "points": 3.9,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9009,
@@ -4183,7 +4419,8 @@
           "points": 9.3,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9010,
@@ -4201,7 +4438,8 @@
           "points": 4.6,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9011,
@@ -4219,7 +4457,8 @@
           "points": 3.1,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9012,
@@ -4236,7 +4475,8 @@
           "points": 14.2,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9013,
@@ -4253,7 +4493,8 @@
           "points": 8.7,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9014,
@@ -4270,7 +4511,8 @@
           "points": 7.9,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9015,
@@ -4287,7 +4529,8 @@
           "points": 6.2,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9016,
@@ -4304,7 +4547,8 @@
           "points": 8.8,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       },
       {
         "player_id": 9017,
@@ -4321,7 +4565,8 @@
           "points": 5.5,
           "source": "espn"
         },
-        "market": null
+        "market": null,
+        "bye_week": null
       }
     ]
   }

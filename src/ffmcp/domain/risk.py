@@ -19,7 +19,7 @@ Tilt 0 is the plain points-maximising lineup, so the answer can never be worse t
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 
 from ffmcp.domain.models import Frozen, Lineup, Player
 from ffmcp.domain.optimizer import optimize, projected_points
@@ -63,8 +63,11 @@ def best_lineup_for_matchup(
     *,
     sds: PlayerSds,
     projections: Mapping[int, float] | None = None,
+    pinned: Mapping[int, int] | None = None,
+    frozen: Collection[int] = (),
 ) -> LineupChoice:
-    """The lineup, from ``players``, that maximises the chance of outscoring ``opponent``."""
+    """The lineup, from ``players``, that maximises the chance of outscoring ``opponent``.
+    ``pinned`` and ``frozen`` are lineup locks, as in ``domain.optimizer.optimize``."""
     means = {
         player.player_id: points
         for player in players
@@ -76,8 +79,8 @@ def best_lineup_for_matchup(
             player_id: max(mean + tilt * sds.get(player_id, 0.0), _MIN_TILTED_WEIGHT)
             for player_id, mean in means.items()
         }
-        tilted = optimize(players, slots, weights)
-        true_points = sum(means[player.player_id] for player in tilted.started)
+        tilted = optimize(players, slots, weights, pinned=pinned, frozen=frozen)
+        true_points = sum(means.get(player.player_id, 0.0) for player in tilted.started)
         lineup = tilted.model_copy(update={"projected_points": round(true_points, 4)})
         model = lineup_score_model(team_id, lineup, means, sds)
         return lineup, matchup_win_probability(model, opponent)

@@ -19,8 +19,9 @@ def register(mcp: MCPServer) -> None:
         target = f" for week {week}" if week is not None else ""
         return (
             f"Run my weekly check-in{target}. Call optimize_lineup, then analyze_matchup, then "
-            "find_waiver_targets, then buy_low_sell_high. Summarize the results as a single "
-            "prioritized action list of at most five items, most impactful first."
+            "find_waiver_targets, then roster_planner, then buy_low_sell_high. Summarize the "
+            "results as a single prioritized action list of at most five items, most impactful "
+            "first."
         )
 
     @mcp.prompt(
@@ -48,7 +49,8 @@ def register(mcp: MCPServer) -> None:
     )
     def playoff_push() -> str:
         return (
-            "Call simulate_season, then find_waiver_targets. Identify the highest-leverage "
-            "changes I could make to improve my playoff odds, ranked by their odds delta, and "
-            "explain why each one matters."
+            "Call simulate_season, then roster_planner, then find_waiver_targets, then "
+            "find_trades. Identify the highest-leverage changes I could make to improve my "
+            "playoff odds (bye weeks to cover, moves ranked by rest-of-season value, trades "
+            "ranked by their odds delta), and explain why each one matters."
         )

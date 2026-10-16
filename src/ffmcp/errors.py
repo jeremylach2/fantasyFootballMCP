@@ -64,9 +64,17 @@ class PlayerNotFound(FFMCPError):
     """A player name matched zero or more than one player. Offer candidates instead of
     guessing, in either direction."""
 
-    def __init__(self, query: str, candidates: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        query: str,
+        candidates: list[str] | None = None,
+        *,
+        suggestions: list[str] | None = None,
+    ) -> None:
         if candidates:
             hint = f" Multiple players match: {', '.join(candidates[:3])}. Be more specific."
+        elif suggestions:
+            hint = f" Did you mean: {', '.join(suggestions[:3])}?"
         else:
             hint = ""
         super().__init__(redact(f"No single player found matching '{query}'.{hint}"))

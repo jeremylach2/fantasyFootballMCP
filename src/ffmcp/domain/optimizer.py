@@ -17,7 +17,7 @@ candidates, which at roster scale (n ~ 10, m ~ 16) is microseconds. Hand-written
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 
 from ffmcp.domain.models import Lineup, Player, RosterSlot, Swap
 
@@ -52,6 +52,10 @@ _FORBIDDEN = 1e9
 arithmetic stays ordinary floats. It is never chosen, because every slot also has a zero-cost
 "leave it empty" option."""
 
+_PIN_BONUS = 1e6
+"""Extra value of a locked starter in his own slot: larger than any lineup's points, smaller
+than ``_FORBIDDEN``, so the matching always keeps him there and never counts it as points."""
+
 
 def slot_accepts(slot: str, player: Player) -> bool:
     """Whether ``player`` may legally be started in ``slot``."""
@@ -67,11 +71,27 @@ def projected_points(
 
     An explicit ``projections`` map is authoritative: a player missing from it has no game,
     which is how a bye week reaches this module without the domain layer needing a calendar.
-    With no map, the player's own attached projection is used on the same terms.
+    With no map, the player's own attached projection is used on the same terms, except that a
+    projection for his own bye week is no projection. ESPN publishes ``0.0`` for a player whose
+    team is off rather than nothing, and taking it at face value made a bye look like a
+    zero-point start instead of an absence.
     """
     if projections is not None:
         return projections.get(player.player_id)
-    return player.projection.points if player.projection is not None else None
+    projection = player.projection
+    if projection is None or projection.week == player.bye_week:
+        return None
+    return projection.points
+
+
+GAME_TIME_STATUSES = frozenset({"QUESTIONABLE", "DOUBTFUL"})
+"""Designations decided on game day. A player with one of these (or none) whom a projection
+source has zeroed may still play; one on injured reserve or ruled out will not."""
+
+
+def is_game_time_decision(player: Player) -> bool:
+    """Whether his availability is still open: questionable, doubtful, or no designation."""
+    return player.injury_status is None or player.injury_status.upper() in GAME_TIME_STATUSES
 
 
 def is_ruled_out(player: Player) -> bool:
@@ -120,7 +140,7 @@ def _build_lineup(
         ),
         projected_points=round(sum(pair[1] for pair in assigned if pair is not None), 4),
         bench=tuple(player for player, _ in startable if player.player_id not in used),
-        unavailable=tuple(unavailable),
+        unavailable=tuple(player for player in unavailable if player.player_id not in used),
     )
 
 
@@ -128,16 +148,29 @@ def optimize(
     players: Iterable[Player],
     slots: Sequence[str],
     projections: Mapping[int, float] | None = None,
+    *,
+    pinned: Mapping[int, int] | None = None,
+    frozen: Collection[int] = (),
 ) -> Lineup:
     """The highest-scoring legal lineup, exactly.
 
     Every slot is also offered a zero-weight "leave it empty" option, so a roster too thin (or
     too injured) to fill the lineup yields a valid partial lineup rather than an error.
+
+    ``pinned`` (``{player_id: slot index}``) and ``frozen`` (player ids) are lineup locks: once a
+    player's game kicks off, a starter stays in his slot and a benched player stays benched.
+    Both are solved inside the same matching rather than around it. A pinned player is offered
+    only his own slot, at a bonus no alternative can beat, so his slot is filled by him and
+    nobody else; a frozen one is offered no slot at all. A pinned player with no projection (out,
+    or on bye) still holds his slot, at zero points, because nobody can take it from him.
     """
     startable, unavailable = _candidates(players, projections)
     n_slots, n_players = len(slots), len(startable)
     if n_slots == 0:
         return _build_lineup(slots, [], startable, unavailable)
+    pinned_slot = dict(pinned or {})
+    held = {index for index in pinned_slot.values() if 0 <= index < n_slots}
+    blocked = set(frozen) | set(pinned_slot)
 
     # Columns: one per candidate, then one empty-slot column per slot at cost 0. Those columns
     # guarantee a feasible assignment always exists, which is what lets an illegal pairing be
@@ -146,13 +179,22 @@ def optimize(
     for index, slot in enumerate(slots):
         row = cost[index]
         for column, (player, points) in enumerate(startable):
-            row[column] = -points if slot_accepts(slot, player) else _FORBIDDEN
+            if pinned_slot.get(player.player_id) == index:
+                row[column] = -points - _PIN_BONUS
+            elif player.player_id in blocked or index in held or not slot_accepts(slot, player):
+                row[column] = _FORBIDDEN
+            else:
+                row[column] = -points
 
     assignment = _min_cost_assignment(cost)
     assigned: list[tuple[Player, float] | None] = [
         startable[column] if 0 <= column < n_players and cost[row][column] < _FORBIDDEN else None
         for row, column in enumerate(assignment)
     ]
+    for player in unavailable:
+        held_at = pinned_slot.get(player.player_id)
+        if held_at is not None and 0 <= held_at < n_slots and assigned[held_at] is None:
+            assigned[held_at] = (player, 0.0)
     return _build_lineup(slots, assigned, startable, unavailable)
 
 

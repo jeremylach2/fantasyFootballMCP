@@ -14,8 +14,10 @@ can re-derive it:
   team's record, points for and points against are the accumulated results of those games, so
   the standings agree with the schedule instead of being asserted alongside it;
 * week 8 is the current week, leaving seven weeks for ``simulate_season`` to actually simulate;
-* four NFL teams are on bye in week 8 (``BYE_TEAMS``), and their players carry no projection,
-  which is how the optimizer's "unavailable" path gets exercised by ordinary data;
+* four NFL teams are on bye in week 8 (``BYE_TEAMS``), and their players carry a projection of
+  ``0.0`` and their bye week, exactly as live ESPN reports them. (They once carried no
+  projection at all, which is how the demo hid a bug the live league showed every week: a bye
+  never rendered as one.)
 * ``playoff_pct`` on each team is filled in by running this repo's own simulator over the
   finished league, so the fixture's stored odds and ``simulate_season``'s output agree.
 
@@ -92,8 +94,9 @@ PRO_TEAMS = (
 # fmt: on
 
 BYE_TEAMS = frozenset({"CLE", "LV", "SEA", "TB"})
-"""NFL teams on bye in the current week. Their players carry no projection, which is how a bye
-reaches the optimizer: it has no calendar, only a missing projection (domain/optimizer.py)."""
+"""NFL teams on bye in the current week. Their players are projected ``0.0`` with
+``bye_week`` set, the shape live ESPN sends, which ``domain.optimizer.projected_points`` reads
+as no game."""
 
 _PLAYING_TEAMS = tuple(t for t in PRO_TEAMS if t not in BYE_TEAMS)
 
@@ -159,10 +162,11 @@ def _make_player(
     *,
     injury_status: str | None = None,
 ) -> dict[str, Any]:
-    """One player in fixture shape. A player on a bye team gets no projection at all, and a
-    ruled-out player keeps his: being out is a different fact from having no game."""
+    """One player in fixture shape. A player on a bye team is projected 0.0 for his bye week,
+    as ESPN does, and a ruled-out player keeps his projection: being out is a different fact
+    from having no game."""
     on_bye = pro_team in BYE_TEAMS
-    projection = None if on_bye else {"week": CURRENT_WEEK, "points": round(points, 1)}
+    projection = {"week": CURRENT_WEEK, "points": 0.0 if on_bye else round(points, 1)}
     return {
         "player_id": player_id,
         "name": name,
@@ -171,8 +175,9 @@ def _make_player(
         "pro_team": pro_team,
         "injured": injury_status is not None,
         "injury_status": injury_status,
-        "projection": None if projection is None else {**projection, "source": "espn"},
+        "projection": {**projection, "source": "espn"},
         "market": None,
+        "bye_week": CURRENT_WEEK if on_bye else None,
     }
 
 
@@ -180,11 +185,15 @@ def _defense_name(pro_team: str) -> str:
     return f"{pro_team} D/ST"
 
 
+def _on_bye(player: dict[str, Any]) -> bool:
+    return player.get("bye_week") == CURRENT_WEEK
+
+
 def _points(player: dict[str, Any]) -> float:
     """Projected points, or ``-1`` for a player with no game: low enough to sort last
     everywhere this module ranks a roster."""
     projection = player["projection"]
-    return float(projection["points"]) if projection is not None else -1.0
+    return -1.0 if projection is None or _on_bye(player) else float(projection["points"])
 
 
 def _set_points(player: dict[str, Any], points: float) -> None:
@@ -196,14 +205,16 @@ def _set_points(player: dict[str, Any], points: float) -> None:
     """
     if player["pro_team"] in BYE_TEAMS:
         player["pro_team"] = _PLAYING_TEAMS[player["player_id"] % len(_PLAYING_TEAMS)]
+        player["bye_week"] = None
     player["projection"] = {"week": CURRENT_WEEK, "points": points, "source": "espn"}
 
 
 def _set_on_bye(player: dict[str, Any], pro_team: str) -> None:
-    """Move a player onto a team that is on bye this week, and drop his projection with him."""
+    """Move a player onto a team that is on bye this week: projected 0.0, as ESPN does."""
     assert pro_team in BYE_TEAMS
     player["pro_team"] = pro_team
-    player["projection"] = None
+    player["projection"] = {"week": CURRENT_WEEK, "points": 0.0, "source": "espn"}
+    player["bye_week"] = CURRENT_WEEK
     if player["position"] == "D/ST":
         player["name"] = _defense_name(pro_team)
 
@@ -303,7 +314,7 @@ def _assign_lineup(
         out_rb = next((p for p in candidates("RB") if p["injury_status"] == "OUT"), None)
         place("RB", out_rb or best("RB"))
         place("RB", best("RB"))
-        bye_wr = next((p for p in candidates("WR") if p["projection"] is None), None)
+        bye_wr = next((p for p in candidates("WR") if _on_bye(p)), None)
         place("WR", bye_wr or best("WR"))
         place("WR", best("WR"))
         place("TE", best("TE"))

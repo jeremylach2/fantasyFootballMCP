@@ -6,6 +6,8 @@ import pytest
 
 from ffmcp.domain.models import LeagueSettings, Player, Projection
 from ffmcp.domain.schedule import (
+    as_of_week,
+    average_rate,
     effective_weeks,
     rate_for_week,
     remaining_week_weights,
@@ -106,3 +108,27 @@ def test_a_roster_cut_never_drops_a_star_just_because_he_is_on_bye() -> None:
     arrival = _rb(4, 8.0, bye=None)
     _, drops = apply_offer([star_on_bye, scrub, starter], [], [arrival], ("RB",))
     assert [p.player_id for p in drops] == [2]
+
+
+def test_a_published_outlook_wins_for_its_week() -> None:
+    """ESPN rates an injured-reserve player at zero for the season; an outlook that has him
+    back in week 9 is the only way his return is worth anything."""
+    back = _rb(1, 0.0, None, rate=None).model_copy(
+        update={
+            "injury_status": "INJURY_RESERVE",
+            "injured": True,
+            "outlook": (Projection(week=13, points=0.0), Projection(week=14, points=11.0)),
+        }
+    )
+    assert rate_for_week(back, 13) == 0.0
+    assert rate_for_week(back, 14) == 11.0
+    assert average_rate(back, [13, 14]) == 5.5
+
+
+def test_a_later_week_sees_everyone_healthy_at_his_rate_and_byes_empty() -> None:
+    hurt = _rb(1, 3.0, 13, rate=14.0).model_copy(update={"injury_status": "OUT", "injured": True})
+    later = as_of_week(hurt, 14, current_week=12)
+    assert later.injury_status is None
+    assert later.projection is not None and later.projection.points == 14.0
+    assert as_of_week(hurt, 13, current_week=12).projection is None  # his bye
+    assert as_of_week(hurt, 12, current_week=12) == hurt

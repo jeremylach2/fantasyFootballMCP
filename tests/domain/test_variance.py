@@ -65,3 +65,14 @@ def test_floor_and_ceiling_bracket_the_projection_and_never_go_negative() -> Non
     assert low == pytest.approx(10.0 - 1.2816 * 5.0, abs=1e-3)
     assert high == pytest.approx(10.0 + 1.2816 * 5.0, abs=1e-3)
     assert floor_ceiling(3.0, 10.0)[0] == 0.0
+
+
+def test_a_zeroed_game_time_decision_gets_the_second_sources_spread() -> None:
+    """ESPN 0.0, Sleeper 10.7, questionable: a 0.0-2.6 range claimed he certainly sits."""
+    questionable = _player(1, "RB", 0.0).model_copy(update={"injury_status": "QUESTIONABLE"})
+    on_ir = _player(2, "RB", 0.0).model_copy(
+        update={"injury_status": "INJURY_RESERVE", "injured": True}
+    )
+    sds = player_sds([questionable, on_ir], alternative={1: 10.7, 2: 10.7})
+    assert sds[1] > 6.0
+    assert sds[2] == MIN_PLAYER_SD  # he is not playing, whatever the second source says

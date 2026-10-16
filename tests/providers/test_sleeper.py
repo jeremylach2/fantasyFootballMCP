@@ -21,6 +21,14 @@ PLAYERS = {
         "position": "QB",
         "team": "BUF",
     },
+    "9004": {
+        "full_name": "Hurt Runner",
+        "position": "RB",
+        "team": "MIA",
+        "injury_status": "IR",
+        "injury_body_part": "Knee - ACL",
+        "injury_notes": "Surgery",
+    },
     "9002": {
         "full_name": "No Position Guy",
         "position": None,  # e.g. a practice-squad entry; must be filtered out
@@ -36,6 +44,14 @@ PROJECTIONS = [
 ]
 
 
+OUTLOOK = {
+    "2": {"stats": {"pts_std": 15.0, "pts_ppr": 18.0}},  # already played: not an outlook
+    "4": {"stats": {"pts_std": 0.0, "pts_ppr": 0.0}},  # expected out
+    "5": None,  # his bye
+    "6": {"stats": {"pts_std": 16.0, "pts_ppr": 20.0}},  # back
+}
+
+
 def _handler(request: httpx2.Request) -> httpx2.Response:
     if request.url.path == "/v1/state/nfl":
         return httpx2.Response(200, json={"season": "2026", "week": 3})
@@ -45,6 +61,8 @@ def _handler(request: httpx2.Request) -> httpx2.Response:
         return httpx2.Response(200, json=TRENDING)
     if request.url.path == "/projections/nfl/2026/3":
         return httpx2.Response(200, json=PROJECTIONS)
+    if request.url.path == "/projections/nfl/player/9001":
+        return httpx2.Response(200, json=OUTLOOK)
     return httpx2.Response(404)
 
 
@@ -110,3 +128,36 @@ async def test_alt_projections_interpolate_the_leagues_reception_scoring(tmp_pat
     assert await provider.get_alt_projections(3, [allen, stranger]) == {1: 22.0}
     half = await provider.get_alt_projections(3, [allen], reception_points=0.5)
     assert half == {1: 20.0}
+
+
+async def test_outlook_keeps_zeros_for_missed_weeks_and_drops_byes(tmp_path: Path) -> None:
+    provider = _provider(tmp_path)
+    allen = Player(
+        player_id=3918298,
+        name="Josh Allen",
+        position="QB",
+        eligible_slots=("QB",),
+        pro_team="BUF",
+    )
+    outlook = await provider.get_outlook([allen], reception_points=0.5)
+    assert outlook == {3918298: {4: 0.0, 6: 18.0}}
+
+
+async def test_outlook_of_an_unknown_player_is_empty(tmp_path: Path) -> None:
+    provider = _provider(tmp_path)
+    nobody = Player(
+        player_id=1, name="Nobody Atall", position="WR", eligible_slots=("WR",), pro_team="BUF"
+    )
+    assert await provider.get_outlook([nobody]) == {1: {}}
+
+
+async def test_market_signal_carries_the_injury_detail(tmp_path: Path) -> None:
+    provider = _provider(tmp_path)
+    hurt = await provider.get_market_signal(
+        espn_player_id=1, name="Hurt Runner", position="RB", pro_team="MIA"
+    )
+    healthy = await provider.get_market_signal(
+        espn_player_id=2, name="Josh Allen", position="QB", pro_team="BUF"
+    )
+    assert hurt is not None and hurt.injury_detail == "Knee - ACL, surgery"
+    assert healthy is not None and healthy.injury_detail is None

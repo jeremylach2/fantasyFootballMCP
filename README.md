@@ -17,8 +17,8 @@ $ optimize_lineup()
   "current_projected": 95.3,
   "optimal_projected": 106.1,
   "point_gain": 10.8,
-  "playoff_odds_delta": 0.3,
-  "win_probability": 34.8,
+  "playoff_odds_delta": 0.7,
+  "win_probability": 34.7,
   "strategy": null,
   "swaps": [
     { "bench": "Tariq Whitlock", "starter": "Marcus Moreau",     "slot": "WR",   "gain": 10.7, "reason": "+10.7 projected points" },
@@ -79,22 +79,24 @@ at `http://localhost:8000/mcp`.
 
 ## What it does
 
-Thirteen tools, four resources, three prompts. All output below is verbatim from the demo league.
+Fifteen tools, four resources, three prompts. All output below is verbatim from the demo league.
 
 | Tool | Does |
 |---|---|
-| `get_my_team` | Show my roster with projections, injuries and bye weeks. |
-| `optimize_lineup` | Find the lineup most likely to win this week's matchup, and the swaps to get there. |
-| `analyze_matchup` | Break down this week's matchup: win probability, edges, and the playoff stakes. |
-| `find_trades` | Suggest trades both sides gain from, priced over the rest of the season. |
-| `evaluate_trade` | Evaluate a specific proposed trade from both sides. |
-| `find_waiver_targets` | Rank free agents by value this week and rest of season; show my RBs' handcuffs. |
-| `buy_low_sell_high` | Find players scoring ahead of or behind their workload. |
+| `get_my_team` | My roster with projections, injuries, byes and lineup locks; a past week's recap or a future week's byes. |
+| `optimize_lineup` | The lineup most likely to win this week's matchup, the swaps to get there, and what to watch. |
+| `analyze_matchup` | A week's matchup: win probability (live, once games start), edges, and the playoff stakes. |
+| `find_trades` | Trades both lineups gain from and the market calls fair, priced over the rest of the season. |
+| `evaluate_trade` | One proposed trade from both sides, and whether the other manager would say yes. |
+| `find_waiver_targets` | Free-agent moves ranked by rest-of-season value, drop included; IR stashes; handcuffs. |
+| `roster_planner` | Where the bye weeks bite, and which bench players I could drop at least cost. |
+| `buy_low_sell_high` | Players scoring ahead of or behind their workload. |
 | `simulate_season` | Simulate the rest of the season for playoff odds and seeding. |
-| `league_standings` | Show standings with playoff odds and strength of schedule. |
-| `power_rankings` | Rank teams by all-play record, with luck and lineup accuracy. |
-| `player_report` | One player in depth: range, second opinion, value, workload, betting line. |
-| `compare_players` | Compare players for a start/sit decision, with floors and ceilings. |
+| `league_standings` | Standings with the same simulated playoff odds, and strength of schedule. |
+| `power_rankings` | Teams by all-play record, with luck and lineup accuracy. |
+| `league_activity` | The league's latest adds, drops and trades. |
+| `player_report` | One player in depth: range, second opinion, injury return, value, workload, market. |
+| `compare_players` | Which of several players my lineup starts, and in which slot. |
 | `projection_accuracy` | How accurate ESPN has been in this league, against a second source. |
 
 Plus four resources (`ffmcp://league/settings`, `ffmcp://league/teams`, `ffmcp://glossary`,
@@ -129,9 +131,14 @@ BE    D. Holloway      WR   BAL 6.9
 IR    L. Novak         RB   MIA 5.2   I
 ```
 
-`optimize_lineup` is the response at the top of this README: +10.8 projected points, a 34.8%
-chance of beating this week's opponent, and +0.3 points of playoff odds. `analyze_matchup` prices
-the week:
+`optimize_lineup` is the response at the top of this README: +10.8 projected points, a 34.7%
+chance of beating this week's opponent, and +0.7 points of playoff odds. On a real Sunday it also
+does three things the demo cannot show. A player whose game has kicked off stays where he is, in
+the lineup or on the bench, because ESPN has locked him. A questionable player ESPN has projected
+for zero while Sleeper expects him to play gets a caveat instead of a silent benching
+(`Saquon Barkley (Questionable, hamstring): ESPN projects 0, Sleeper 10.7; ...`). And when the
+flex holds an early game while a later one sits at a position slot, it says to swap their slots,
+which keeps a late swap open. `analyze_matchup` prices the week:
 
 ```
 Week 8 (proj): Team Alpha 106.1 vs Team India 118.6 — 35% win prob
@@ -140,12 +147,15 @@ Biggest edges:
   K: Team Alpha +8.8
   WR: Team Alpha +4.8
 Swing player: D. Rios (WR GB, ±12.6 pts)
-Stakes: win -> 4% playoff odds, loss -> 0% (3-pt swing)
+Stakes: win -> 14% playoff odds, loss -> 2% (12-pt swing)
 ```
 
 `Stakes` is one simulation of the season split by how this week's game went, so it answers "how
-much does this game matter" rather than "how likely am I to win it". Alpha is nearly eliminated,
-so the answer is: not much. A bubble team in week 12 sees 20-point swings.
+much does this game matter" rather than "how likely am I to win it". It is the same simulation
+`simulate_season` and `league_standings` report, so the two halves average back to the 6.4%
+those tools show. In the live 16-team league in week 6, the same line read "win -> 78%, loss ->
+49%": a 29-point game. Once kickoff passes, a `Live win prob` line adds the score so far to each
+starter's projection for the share of his game still to play.
 
 **Win probability, not points.** `optimize_lineup` maximises the chance of beating *this*
 opponent, which is not always the same lineup as the most projected points. With your score and
@@ -162,74 +172,119 @@ and occasionally decisive, and it is described here as exactly that.
 ### Should I make this trade?
 
 `find_trades` enumerates 1-for-1, 2-for-1 and 1-for-2 packages across every other roster,
-**keeps only the ones both sides gain from**, and ranks them by what they do to *my* playoff
-odds:
+**keeps only the ones both lineups gain from and the trade market calls fair**, and ranks them by
+what they do to *my* playoff odds:
 
 ```
-Team Bravo [lucky] (id 2): give Q. Hargrove / get B. Battaglia, M. Quintero — me +39.1pts, them +12.4pts, +3.7% odds — Strengthens RB by 8.0 started pts/wk.
-Team Bravo [lucky] (id 2): give L. Petrov / get L. Castellan — me +35.1pts, them +25.5pts, +2.9% odds — Strengthens RB by 9.8 started pts/wk.
-Team Bravo [lucky] (id 2): give Q. Hargrove / get C. Castellan — me +21.9pts, them +23.9pts, +2.9% odds — Strengthens RB by 6.7 started pts/wk.
-Team Bravo [lucky] (id 2): give L. Petrov / get B. Battaglia, T. Obi — me +38.1pts, them +1.6pts, +2.6% odds — Strengthens RB by 8.0 started pts/wk.
+Team Bravo [lucky] (id 2): give Q. Hargrove, M. Moreau / get C. Castellan — me +18.8pts, them +15.4pts, +2.3% odds — mkt 682 vs 824 — Started pts/wk ROS: RB +8.5, WR -3.2, QB -2.7.
+Team Bravo [lucky] (id 2): give L. Petrov, E. Villanueva / get L. Castellan — me +14.5pts, them +23.2pts, +1.6% odds — mkt 1,034 vs 1,278 — Started pts/wk ROS: RB +10.4, QB -5.5, WR -2.9.
+Team Bravo [lucky] (id 2): give Q. Hargrove, M. Moreau / get T. Osei — me +13.0pts, them +20.4pts, +1.4% odds — mkt 682 vs 837 — Started pts/wk ROS: WR +4.5, QB -2.7.
 ```
 
-The first row is the whole thesis of the trade module in one line. Quentin Hargrove is a
-19.4-point quarterback, on a roster that already starts a 22.6-point quarterback, in a league
-with one QB slot. He is worth **zero** to Team Alpha, because he never plays. He is worth 6.5
-points a week to Team Bravo, who start a 12.9-point quarterback. *What a player is worth is a
-property of the roster, not of the player*, and that asymmetry is the only reason trades happen.
-`marginal_value` measures it as the change in a roster's **optimal lineup** from adding or
-removing him, which is exactly why the optimizer had to be both correct and fast.
+The thesis of the trade module is Quentin Hargrove. He is a 19.4-point quarterback, on a roster
+that already starts a 22.6-point quarterback, in a league with one QB slot. He is worth **zero**
+to Team Alpha, because he never plays, and several points a week to Team Bravo, who start a
+12.9-point quarterback. *What a player is worth is a property of the roster, not of the player*,
+and that asymmetry is the only reason trades happen. `marginal_value` measures it as the change in
+a roster's **optimal lineup** from adding or removing him, which is exactly why the optimizer had
+to be both correct and fast.
 
-Points are priced **week by week over the rest of the season**, not as this week's value times
-the weeks left: each player is absent in his own bye week, later weeks use his season-average
-projection rather than this week's matchup, and the playoff weeks count in proportion to each
-side's playoff odds. Offers that are the same core swap with a different sweetener are collapsed
-into one, and the partner's tag (`[lucky]`, `[unlucky]`, `[inattentive]`, from
-`power_rankings`) says what their record is hiding.
-
-`evaluate_trade` prices one named offer from both sides:
+But managers do not do that arithmetic. They anchor on names and on what players trade for,
+and the earlier version of this table proposed exactly the trades they decline: in a real league
+its top idea was a backup quarterback (market value 267) for Mike Evans (3,190), marked
+"accept". So each side is also priced by the trade market
+([FantasyCalc](https://fantasycalc.com) redraft values for the league's size, quarterback count
+and reception scoring), shown as `mkt` (what I give vs what I get), and an offer is dropped when
+the partner gives up more than 1.25 times what they receive. That threshold is a judgement, not a
+fit: there is no record of declined offers to fit it on. Here the market turned "Hargrove for
+Caleb Castellan" into "Hargrove and a receiver for Castellan", which is the offer a person might
+actually accept. `evaluate_trade` says the same about the bare one-for-one:
 
 ```
 {
   "verdict": "lean_accept",
-  "my_value_delta": 21.9,
-  "partner_value_delta": 23.9,
-  "my_playoff_odds_delta": 2.9,
-  "positional_impact": "Strengthens RB by 6.7 started pts/wk.",
-  "risks": []
+  "my_value_delta": 23.4,
+  "partner_value_delta": 13.3,
+  "my_playoff_odds_delta": 3.0,
+  "positional_impact": "Started pts/wk ROS: RB +6.0, QB -2.7.",
+  "partner_likely_accepts": false,
+  "market": "Market: you give 376, get 824 (FantasyCalc); they give up more than 1.25x what they get, so expect a decline.",
+  "risks": [],
+  "deadline": null
 }
 ```
 
-An offer only one side gains from is a fleece and will be declined by any manager who does the
-same arithmetic, so those are filtered out rather than ranked low. The filter is the feature.
+`verdict` is whether *I* should want it; `partner_likely_accepts` is whether they will.
+
+Points are priced **week by week over the rest of the season**, not as this week's value times
+the weeks left: each player is absent in his own bye week, later weeks use his season-average
+projection rather than this week's matchup, and the playoff weeks count in proportion to each
+side's simulated playoff odds. That reaches the search's cheap first stage too, which screens at
+season rates: screened by this week's projection, a star on his bye week was worth nothing to
+anyone and could never be a target. Kickers and defenses are left out unless asked for by name,
+a trade that would lower my playoff odds is never suggested, offers that are the same core swap
+with a different sweetener are collapsed into one, the league's trade deadline is counted down,
+and the partner's tag (`[lucky]`, `[unlucky]`, `[inattentive]`, from `power_rankings`) says what
+their record is hiding. An offer only one side gains from is a fleece and is filtered out rather
+than ranked low. The filters are the feature.
 
 ### Who should I pick up?
 
-`find_waiver_targets` ranks free agents by marginal value **to this roster**, not by
-projection, and not by how many people are adding them, and always names the drop, because a
-pickup recommendation without one is not advice:
+`find_waiver_targets` ranks complete moves (the add *and* the drop) by what they do to **this
+roster's rest of season**, not by projection, and not by how many people are adding them:
 
 ```
-PLAYER           POS  TM  PROJ  VAL    ROS    DROP
-D. Ivanov        RB   CIN 12.4  +4.0   +19    T. Moreau
-C. Fairbanks     WR   KC  13.1  +2.7   +17    T. Moreau
-ARI D/ST         D/ST ARI 8.8   +2.1   +6     WSH D/ST
-I. Battaglia     WR   CHI 10.6  +0.2   +2     T. Moreau
+PLAYER           POS  TM  PROJ  ROS   VAL   DROP
+D. Ivanov        RB   CIN 12.4  +21   +4.0  T. Moreau
+C. Fairbanks     WR   KC  13.1  +18   +2.7  T. Moreau
+ARI D/ST         D/ST ARI 8.8   +13   +2.1  T. Moreau
+C. Brennan       K    JAX 6.2   +6    +0.0  T. Moreau
 ```
 
 Caleb Fairbanks is the higher projection. Devin Ivanov is the better pickup, because this roster
-is thin at running back and deep at receiver. `VAL` is this week; `ROS` is the whole move, add and
-drop, over the rest of the calendar. The two disagree more than you would guess: in a live league
-the best defense to stream this week was worth +3.4 now and +9 for the season, while one
-projected 0.2 lower was worth +36, because its good matchup was not a one-off.
+is thin at running back and deep at receiver. `ROS` is the whole move over every remaining week,
+this one included; `VAL` is this week's part of it. Ranking by this week was the old behaviour,
+and in a 16-team league it was useless: almost no free agent beats a starter this week, so it
+recommended two kickers and a defense, the first worth **-24** for the season, while the moves
+that matter (bye cover, a back returning from injury) never appeared.
 
-An earlier version of this table told Team Alpha to drop Tariq Whitlock, the roster's hottest
-receiver, for every pickup. He is on bye this week, so his projection was zero, and cuts were
-ranked by this week's projection. They are now ranked by rest-of-season rate.
+The drop is whichever player the season misses least, tried one at a time through the whole
+remaining calendar. Every simpler rule tried was wrong in a way a manager would notice. By this
+week's projection it cut the roster's hottest receiver because he was on bye; by lowest season
+rate it cut the backup defense for every pickup, because defenses score least, even while the
+roster carried a spare kicker. Now a kicker pickup cuts the spare kicker.
 
-When the roster starts a lead running back, a `Handcuffs:` line names the teammate who inherits
-his work if he goes down (the back playing the most snaps behind him) and where that player is:
-free agent, your bench, or another roster.
+Injured-reserve free agents are listed separately as stashes, valued from when they are projected
+back (Sleeper's week-by-week outlook, which ESPN does not have: its season rate for anyone on IR
+is zero, which priced one at -91.7 for the season). For `position="D/ST"` a `Matchups` line shows
+each defense's next opponents' implied points, as context. And when the roster starts a lead
+running back, a `Handcuffs:` line names the teammate who inherits his work if he goes down and
+where that player is: free agent, your bench, or another roster.
+
+### Where do the byes bite?
+
+`roster_planner` answers the two questions waivers raise: which weeks byes take regular starters
+out of the lineup, and who on the bench could go.
+
+```
+Bye weeks ahead (typical week 110.1):
+  Wk 8: T. Whitlock out -> 109.5 (-0.6)
+  Wk 9: L. Santoro out -> 104.0 (-6.1)
+  Wk 10: I. Adeyemi out -> 108.9 (-1.2)
+  Wk 11: M. Moreau out -> 109.8 (-0.3)
+  Wk 12: L. Petrov out -> 106.9 (-3.2)
+  Wk 13: S. Quintero, T. Prescott out -> 97.9 (-12.2)
+Drop candidates (rest-of-season cost, cheapest first):
+PLAYER           POS  TM  ROS    WHY
+T. Moreau        RB   KC  0.0    never starts
+D. Holloway      WR   BAL 0.0    never starts
+D. Obi           TE   DET -6.9   only starts to cover L. Santoro's wk-9 bye
+Q. Hargrove      QB   IND -19.4  only starts to cover L. Petrov's wk-12 bye
+```
+
+In the live league this is the tool that found week 11 (quarterback and both starting receivers
+on bye, 25 points below a normal week) and said the spare kicker "only starts to cover C.
+Boswell's wk-9 bye".
 
 ### Who is due to regress?
 
@@ -240,19 +295,24 @@ yards, pass attempts) as **expected points**, and treats the gap to actual point
 ```
 Sell high (yours, scoring above their workload):
 PLAYER           POS  TM  OWNER          G  SNAP XPPG  PPG   LUCK
-T. Whitlock      WR   SEA Team Alpha     7  88%  9.2   15.3  +6.0
+T. Whitlock      WR   SEA Team Alpha     7  88%  7.9   18.3  +10.4
 Hold, do not sell low (yours, due to improve):
 PLAYER           POS  TM  OWNER          G  SNAP XPPG  PPG   LUCK
-L. Petrov        QB   LAC Team Alpha     7  100% 23.0  12.5  -10.5
+D. Rios          WR   GB  Team Alpha     6  62%  16.4  11.9  -4.4
+L. Santoro       TE   NO  Team Alpha     7  88%  14.1  9.7   -4.4
+S. Quintero      RB   DAL Team Alpha     7  88%  11.7  7.4   -4.3
+M. Moreau        WR   NYG Team Alpha     7  88%  10.3  6.9   -3.4
 Buy low (other rosters):
 PLAYER           POS  TM  OWNER          G  SNAP XPPG  PPG   LUCK
-J. Quintero      WR   GB  Team Charlie   7  88%  18.2  11.9  -6.3
-T. Delgado       QB   BAL Team Foxtrot   6  100% 23.2  17.0  -6.2
-T. Osei          WR   KC  Team Bravo     7  88%  18.6  12.5  -6.2
-D. Thackeray     QB   DET Team India     6  100% 21.3  15.3  -6.0
-L. Ellington     WR   DET Team Golf      6  88%  15.3  9.7   -5.7
+T. Osei          WR   KC  Team Bravo     6  88%  19.3  10.4  -8.9
+Q. Vasquez       WR   JAX Team Charlie   7  88%  16.2  9.4   -6.8
+J. Caldwell      WR   GB  Team India     6  35%  15.1  10.2  -4.9
+C. Sarsgaard     WR   NO  Team Golf      7  88%  10.7  6.2   -4.6
+E. Brennan       WR   TEN Team Bravo     6  88%  13.1  9.0   -4.1
 Buy low (free agents):
-  none
+PLAYER           POS  TM  OWNER          G  SNAP XPPG  PPG   LUCK
+A. Ashworth      TE   NO  FA             7  62%  9.2   6.1   -3.1
+Injured, so left out of the buy-low lists: D. Ellington (Injury Reserve)
 ```
 
 That is a claim about the future, so it was tested on one: fit on 2024, scored on 2025.
@@ -260,7 +320,10 @@ Expected points per game through week 4 predicted the next six weeks with a mean
 of **3.44** points, against **3.69** for actual points per game. Players 3+ points per game below
 their expected points went on to score **+3.5** more per game; players 3+ above gave back
 **2.9**. The ±3 threshold is where that regression was measured, and labels wait for three games
-(before that, the tool shows the biggest gaps as a watch list, and says so).
+(before that, the tool shows the biggest gaps as a watch list, and says so). A buy-low is only
+listed if he would start for somebody, above replacement at his position or an upgrade on your own
+lineup, rated at the better of his projection and his volume: in a one-quarterback league, four
+free-agent quarterbacks running below their volume are four players nobody will start.
 
 ### One player, in depth
 
@@ -268,39 +331,52 @@ their expected points went on to score **+3.5** more per game; players 3+ above 
 Damon Rios — WR GB, week 8
 Projected: 15.9 pts (range 0.0-32.1, p10-p90)
 Second opinion: Sleeper 8.7; sources disagree by 45%, so the range is wider
-Status: healthy · bye week 9
-Value over replacement: +3.7 pts/wk, +22.4 pts rest of season (6.1 wks, byes and playoff odds counted)
-Usage (7 g): 62% snaps (last 62%), 9.7 tgt/g (28% share), expected 16.6 vs actual 15.0 pts/g
-Game: GB implied 23.0 pts (-1.0 vs WSH, total 45.0)
-Market: 96% owned
+Status: healthy
+Value over replacement: +3.7 pts/wk, +26.4 pts rest of season (7.1 wks, byes and playoff odds counted)
+Usage (6 g): 62% snaps (last 62%), 9.6 tgt/g (27% share), expected 16.4 vs actual 11.9 pts/g -> buy low
+Game: GB implied 22.8 pts (+6.0 vs NYG, total 51.5)
+Market: 96% owned, trade value 934 (FantasyCalc)
 ```
 
 `Game` is the betting market's implied team total (total ÷ 2 − spread ÷ 2), from The Odds API
 when a key is configured. It is context, never an input: ESPN's projection already prices the
 matchup, and adding Vegas on top would count the same information twice.
 
+Two cases get words instead of numbers. When ESPN zeroes a questionable player that Sleeper
+expects to play, the report says `ESPN projects 0 (expects him out); Sleeper 10.7. Check final
+inactives 90 min before kickoff.`, and his range is scaled from Sleeper's number: a spread
+proportional to zero had printed "0.0-2.6" for a player who might start, beside a
+"sources disagree by 1065%". And a player on injured reserve gets an `Outlook` line from his
+week-by-week projections (`back week 9 (Sleeper), 6.0 pts/g after`, or `no return projected`).
+
 ### Will I make the playoffs?
 
 `simulate_season` runs a vectorized Monte Carlo over the remaining schedule:
 
 ```
-2,000 sims, weeks 8-14:
-TEAM             REC     MEANW  PLAYOFF%  TITLE%
-T. Echo          6-1     10.3   95.8%     27.8%
-T. Bravo         6-1     10.0   93.2%     22.8%
-T. Foxtrot       5-2     9.2    84.9%     24.8%
-T. Hotel         5-2     8.3    56.2%     8.6%
-T. Charlie       4-3     8.0    52.5%     12.7%
-T. India         2-5     5.7    8.5%      2.1%
-T. Juliet        2-5     5.6    5.2%      0.8%
-T. Alpha         3-4     5.7    3.6%      0.5%
-T. Delta         1-6     4.0    0.1%      0.0%
-T. Golf          1-6     3.3    0.1%      0.0%
+10,000 sims, weeks 8-14:
+TEAM               REC     MEANW  PLAYOFF%  TITLE%
+Team Echo          6-1     10.5   95.3%     27.2%
+Team Bravo         6-1     9.9    86.8%     17.5%
+Team Foxtrot       5-2     9.1    80.4%     22.9%
+Team Hotel         5-2     8.3    53.8%     8.2%
+Team Charlie       4-3     7.8    48.1%     13.4%
+Team India         2-5     6.2    21.2%     7.1%
+Team Juliet        2-5     5.5    7.3%      2.0%
+Team Alpha         3-4     5.8    6.4%      1.5%
+Team Delta         1-6     3.6    0.4%      0.1%
+Team Golf          1-6     3.4    0.3%      0.1%
 ```
 
 Team Alpha is 3-4 and behind a 2-5 team in playoff odds. That is correct, and the reason to
 simulate rather than extrapolate a record: Alpha's roster projects worse, and seven weeks is
 enough for that to matter more than one game of standings.
+
+`league_standings` shows these same numbers, run once and cached per league state, and
+`analyze_matchup`'s stakes come from the same model. An earlier version had three sources
+(ESPN's own percentage in the standings, this simulation, and a third in the stakes line), and
+gave one live team 67.6%, 93.8% and 88-97%. A manager who sees three different numbers for his
+own team stops trusting all of them.
 
 ### Who is actually good?
 
@@ -311,17 +387,17 @@ lineup decisions separately from the dice:
 
 ```
 Power rankings after 7 weeks (by all-play record):
-RK  ID  TEAM           W-L   ALLPLAY LUCK  PPG    LINEUP% BENCH
-1   5   Team Echo      6-1   53-10   +0.1  126.7  96%     15.7
-2   2   Team Bravo     6-1   42-21   +1.3  117.8  100%    8.9
-3   8   Team Hotel     5-2   40-23   +0.6  114.6  100%    13.0
-4   6   Team Foxtrot   5-2   36-27   +1.0  115.2  100%    15.8
-5   9   Team India     2-5   35-28   -1.9  111.3  100%    12.6
-6   3   Team Charlie   4-3   29-34   +0.8  109.8  100%    11.7
-7   1   Team Alpha     3-4   28-35   -0.1  96.7   100%    13.3
-8   10  Team Juliet    2-5   23-40   -0.6  102.2  100%    16.9
-9   4   Team Delta     1-6   16-47   -0.8  93.6   100%    17.0
-10  7   Team Golf      1-6   13-50   -0.4  93.9   100%    11.2
+RK  ID  TEAM             W-L   ALLPLAY LUCK  PPG    LINEUP% BENCH
+1   5   Team Echo        6-1   53-10   +0.1  126.8  92%     21.1
+2   2   Team Bravo       6-1   42-21   +1.3  117.7  100%    9.8
+3   8   Team Hotel       5-2   40-23   +0.6  114.6  100%    14.7
+4   6   Team Foxtrot     5-2   36-27   +1.0  115.3  100%    14.6
+5   9   Team India       2-5   35-28   -1.9  111.3  100%    19.6
+6   3   Team Charlie     4-3   29-34   +0.8  109.8  100%    10.0
+7   1   Team Alpha       3-4   28-35   -0.1  96.7   100%    19.7
+8   10  Team Juliet      2-5   23-40   -0.6  102.2  100%    15.1
+9   4   Team Delta       1-6   16-47   -0.8  93.6   100%    16.9
+10  7   Team Golf        1-6   13-50   -0.4  93.9   100%    14.3
 Team Echo: inattentive
 Team Bravo: lucky
 Team Foxtrot: lucky
@@ -340,13 +416,13 @@ and 2026. Team India, 2-5 with the fifth-best all-play record, is the team to tr
 ```
 Projection error in this league, weeks 1-7 (mean absolute error, pts):
 POS  N     ESPN  SLEEPER AVG   BIAS
-QB   130   6.24  6.38    6.29  -0.99
-RB   329   4.82  4.86    4.83  +0.17
-WR   338   4.76  4.79    4.75  -1.27
-TE   129   4.59  4.48    4.52  -0.42
-K    65    3.65  3.74    3.69  -0.13
-D/ST 68    5.98  5.90    5.93  +0.54
-ALL  1059  4.95  4.98    4.95  -0.50
+QB   135   5.62  5.68    5.62  +0.03
+RB   329   4.76  4.85    4.80  +0.12
+WR   335   5.35  5.33    5.33  -0.70
+TE   132   3.86  3.84    3.84  -0.04
+K    67    3.25  3.30    3.26  -0.14
+D/ST 68    6.05  6.15    6.09  +0.14
+ALL  1066  4.93  4.97    4.94  -0.18
 ESPN is closer by 0.03 pts/player-week. Differences under ~0.3 are noise at this sample size; where the sources disagree, trust both less.
 Biggest disagreements on your roster this week: D. Rios 15.9 vs 8.7
 ```
@@ -370,6 +446,18 @@ survived. `scripts/calibrate.py` reproduces every number here and every fitted c
 | Opportunity predicts better than points | MAE 3.44 vs 3.69, out of sample | Kept: `buy_low_sell_high` |
 | Hindsight lineup efficiency grades managers | Mostly luck (99.8% accurate, 83% efficient) | Replaced by lineup accuracy |
 | Chase variance as an underdog | Correct, but changed 0 of 16 real lineups in week 3 | Kept, and documented as rarely decisive |
+| Simulate each week on its own projection (byes, season rates) | Playoff-odds Brier 0.2034 vs 0.2065 for the old hold-this-week-constant model, 116 team-predictions from weeks 4-10 of 2024-25 | Kept; the gain is real but small in aggregate |
+| A per-season team-strength draw | Teams' rest-of-season averages miss their projections by sd 10.7/wk beyond weekly noise; with it, 0 of 116 90%+ calls missed, against 4 without | Kept: `TEAM_STRENGTH_SD = 10.7` |
+
+The playoff-odds backtest deserves its caveats said plainly. Mid-season playoff prediction in
+these leagues is hard: every model scores around 0.20 against 0.247 for a flat 55%, and with 29
+teams per starting week the differences between models at any one week are noise (the old model
+did slightly better from weeks 4 and 6, the new one from 8 and 10). The reason to change it was
+never the aggregate score. It was what the old model did to individual teams in a live league,
+where three starters on bye *this* week were treated as on bye *every* week: one 3-2 team went
+from ESPN's 54% to 7.9%. In a test league, emulating that model takes a 50% team with three
+starters on bye this week to 0.1%; the shipped model has it at 40.5%, one game's worth lower. ESPN's own historical playoff
+percentages are not available, so the backtest compares models with each other, not with ESPN.
 
 The variance change matters most, even though it is the least visible. The old model
 overstated every lineup's weekly spread by nearly half (33 points against a real 22), which pulled
@@ -401,9 +489,12 @@ the AST of every module under `domain/` and fails if one of them imports `mcp`, 
 `httpx`, `espn_api`, `requests` or `ffmcp.providers`.
 
 Upstream payloads never reach the model. Sleeper's player document is 14.6 MB. It is fetched at
-most daily and reduced to an id→`{name, pos, team}` index *on write*. ESPN league payloads are
-cached with TTLs that follow how fast the underlying truth moves (league settings 24 h, rosters
-10 min, live scores 60 s) and projected into narrow domain models before anything is returned.
+most four times a day and reduced to an id→`{name, pos, team, injury}` index *on write*. ESPN
+data is cached with TTLs that follow how fast the underlying truth moves: the season's pairings
+are fetched once a day (calling ESPN's scoreboard per remaining week had downloaded the entire
+schedule nine times per tool call), free agents for ten minutes, and the league itself every ten
+minutes, or every minute while a game is in progress. If a refresh fails, the last good copy
+keeps serving. Everything is projected into narrow domain models before anything is returned.
 Startup does no network at all, so `tools/list` answers immediately.
 
 Request lifecycle: a single tool invocation flows through resolving settings and the league
@@ -436,24 +527,26 @@ table, carrying both channels is close to double cost for no gain.
 <!-- BENCH:START -->
 | tool | detail | tokens | upstream bytes | tokens-if-naive |
 |---|---|---:|---:|---:|
-| `get_my_team` | compact | 176 | 127,618 | ~31,904 |
-| `get_my_team` | standard | 237 | 127,618 | ~31,904 |
-| `get_my_team` | full | 262 | 127,618 | ~31,904 |
-| `optimize_lineup` | - | 378 | 127,618 | ~31,904 |
-| `analyze_matchup` | compact | 61 | 127,618 | ~31,904 |
-| `analyze_matchup` | standard | 78 | 127,618 | ~31,904 |
-| `find_trades` | - | 148 | 127,618 | ~31,904 |
-| `evaluate_trade` | - | 50 | 127,618 | ~31,904 |
-| `find_waiver_targets` | compact | 68 | 127,618 | ~31,904 |
-| `find_waiver_targets` | standard | 85 | 127,618 | ~31,904 |
-| `find_waiver_targets` | full | 92 | 127,618 | ~31,904 |
-| `buy_low_sell_high` | - | 203 | 127,618 | ~31,904 |
-| `simulate_season` | - | 136 | 127,618 | ~31,904 |
-| `league_standings` | compact | 170 | 127,618 | ~31,904 |
-| `power_rankings` | - | 206 | 127,618 | ~31,904 |
-| `player_report` | - | 105 | 127,618 | ~31,904 |
-| `compare_players` | - | 49 | 127,618 | ~31,904 |
-| `projection_accuracy` | - | 143 | 127,618 | ~31,904 |
+| `get_my_team` | compact | 176 | 134,689 | ~33,672 |
+| `get_my_team` | standard | 237 | 134,689 | ~33,672 |
+| `get_my_team` | full | 263 | 134,689 | ~33,672 |
+| `optimize_lineup` | - | 375 | 134,689 | ~33,672 |
+| `analyze_matchup` | compact | 62 | 134,689 | ~33,672 |
+| `analyze_matchup` | standard | 78 | 134,689 | ~33,672 |
+| `find_trades` | - | 134 | 134,689 | ~33,672 |
+| `evaluate_trade` | - | 94 | 134,689 | ~33,672 |
+| `find_waiver_targets` | compact | 66 | 134,689 | ~33,672 |
+| `find_waiver_targets` | standard | 81 | 134,689 | ~33,672 |
+| `find_waiver_targets` | full | 91 | 134,689 | ~33,672 |
+| `roster_planner` | - | 156 | 134,689 | ~33,672 |
+| `buy_low_sell_high` | - | 302 | 134,689 | ~33,672 |
+| `simulate_season` | - | 142 | 134,689 | ~33,672 |
+| `league_standings` | compact | 175 | 134,689 | ~33,672 |
+| `power_rankings` | - | 212 | 134,689 | ~33,672 |
+| `league_activity` | - | 48 | 134,689 | ~33,672 |
+| `player_report` | - | 109 | 134,689 | ~33,672 |
+| `compare_players` | - | 52 | 134,689 | ~33,672 |
+| `projection_accuracy` | - | 143 | 134,689 | ~33,672 |
 
 _Every row's naive comparison is against the full fixture league payload (a 10-team league snapshot, standing in for a real upstream fetch) serialized as-is, rather than the reduced, narrow response above it. `tokens` is the deterministic local estimator. `upstream bytes`/`tokens-if-naive` are the same for every row because this benchmark runs against one fixture league. A live league's numbers vary by roster size and week, but the shape of the reduction does not._
 <!-- BENCH:END -->
@@ -502,11 +595,19 @@ Ties break by player id, so output is stable across runs.
 ## Simulation
 
 [`src/ffmcp/domain/simulate.py`](src/ffmcp/domain/simulate.py) runs the rest of the season as a
-vectorized numpy Monte Carlo: each team's weekly score is drawn from a distribution whose mean
-is its optimal-lineup projection and whose variance comes from
+vectorized numpy Monte Carlo. Each team's score in each remaining week is drawn from a
+distribution whose mean is its optimal-lineup projection **for that week**: this week's
+projections and injuries for this week; every player healthy at his season rate, minus whoever is
+on bye, for every week after; and the playoff weeks the same way, summed for two-week rounds.
+That is the same definition of "a week" (`domain/schedule.py`) that trade and waiver values use,
+so the tools cannot disagree about who is on bye. The variance comes from
 [`domain/variance.py`](src/ffmcp/domain/variance.py): per-position spreads measured on a real
 league's season, widened for players whose projection sources disagree (see
-[Measured, not assumed](#measured-not-assumed)).
+[Measured, not assumed](#measured-not-assumed)). On top of the weekly noise, each simulated
+season draws one team-strength offset per team, held all season: projections are not the truth,
+and a team's true level is uncertain in a way that does not average out week to week. Leagues
+that play a median game every week, seed division winners first, or play two-week playoff rounds
+are simulated that way.
 
 **Why Δ win-probability instead of Δ points.** "This lineup change is worth 10.8 points" is
 not the question. The question is whether it wins the week and the season, and the answer
@@ -536,7 +637,7 @@ Built against MCP spec `2026-07-28` and Python SDK 2.x (`MCPServer`), **not** th
 | Feature | Where | Why |
 |---|---|---|
 | **Cache hints** | `server.py:CACHE_HINTS` | `tools/list`, `prompts/list`, `resources/list` cached 1 h public; `resources/read` 5 min private |
-| **Tool annotations** | every `mcp/tools_*.py` | `read_only_hint=True` on all thirteen tools, asserted by `tests/mcp/test_annotations.py` |
+| **Tool annotations** | every `mcp/tools_*.py` | `read_only_hint=True` on all fifteen tools, asserted by `tests/mcp/test_annotations.py` |
 | **Resource templates** | `mcp/resources.py` | `ffmcp://team/{team_id}/roster{?week,detail}` — RFC 6570 |
 | **Elicitation, with a fallback** | `mcp/_shared.py:resolve_my_team_id` | asked once when `FFMCP_TEAM_ID` is unset; a client that cannot elicit gets a two-line error naming the variable, never a guess |
 | **Progress** | `simulate_season`, `find_trades` | `ctx.report_progress()` forwarded from pure domain code via an injected callback, so `domain/` never learns what MCP is |
@@ -569,6 +670,7 @@ from memory, since most MCP examples online still target the superseded v1 `Fast
 | `FFMCP_ODDS_API_KEY` | — | optional; [The Odds API](https://the-odds-api.com) free key for betting lines (`ODDS_API_KEY` also accepted) |
 | `FFMCP_CACHE_DIR` | `~/.cache/ffmcp` | |
 | `FFMCP_SIMS` | `10000` | Monte Carlo iterations |
+| `FFMCP_FIXTURE` | `demo` | which committed fixture set demo mode serves: `demo` or `snapshot` |
 
 Secrets are typed `SecretStr`, and `errors.py:redact()` strips anything cookie-shaped, and any
 `apiKey=` query parameter, from every error message and log line at the boundary (unit-tested
@@ -576,7 +678,8 @@ against a fake `espn_s2`, a `SWID` GUID and a key-bearing URL).
 
 Every signal beyond ESPN is optional and degrades to a one-line caveat rather than an error:
 no odds key means no `Game` line; Sleeper or nflverse being down means ranges from position
-spreads alone, or no usage section. A tool that refused to set a lineup because GitHub was slow
+spreads alone, or no usage section; FantasyCalc being down means trades are not checked for
+market plausibility, and the response says so. A tool that refused to set a lineup because GitHub was slow
 would be worse than one that sets it with slightly less information and says so. See the [Quickstart](#quickstart) above for where to find ESPN cookies.
 
 ## Testing
@@ -585,8 +688,8 @@ would be worse than one that sets it with slightly less information and says so.
 uv run poe check    # ruff lint + format, mypy --strict, pytest, benchmark freshness
 ```
 
-230 tests, no network anywhere: fixtures for ESPN, `httpx2.MockTransport` for Sleeper, nflverse
-and The Odds API. Beyond the usual, the suite carries a few tests that exist to turn claims into
+325 tests, no network anywhere: fixtures for ESPN, `httpx2.MockTransport` for Sleeper, nflverse,
+The Odds API and FantasyCalc. Beyond the usual, the suite carries a few tests that exist to turn claims into
 facts: the layering purity check, the greedy-vs-optimal counterexample, the common-random-numbers
 comparison, the token budgets, a star on his bye week never being the roster cut, one good
 matchup never being extrapolated across a season, and a hygiene test asserting no fixture
@@ -596,8 +699,17 @@ The demo league itself is synthetic (invented players, invented projections), ge
 deterministically by `scripts/make_demo_fixture.py` and committed, so that shipping a runnable
 demo does not mean publishing anyone's real roster. Its history, usage, second-opinion
 projections and betting lines come from `scripts/make_demo_insights.py`, derived from that league
-so the two agree: each team's starters add up to the scores its standings were built from. `scripts/record_fixtures.py` is the other
-path, for anonymizing a real league you have consent to use.
+so the two agree: each team's starters add up to the scores its standings were built from.
+
+The suite once passed in full while every one of the bugs a live-league audit found was live,
+because the synthetic league differed from real ESPN data in exactly the ways that hid them: ESPN
+projects a bye as `0.0`, not nothing; injured free agents carry a season rate of zero; released
+players sit on no NFL team; a 16-team league's waiver wire is thin. So there is a second fixture
+set, `snapshot`: a real 16-team league at week 6, anonymized by `scripts/record_fixtures.py`
+(team names replaced, league id replaced, no owner data), with everything the tools read, from
+rosters and the full schedule to market values and injured players' outlooks.
+`tests/mcp/test_snapshot_regressions.py` reproduces each audit finding on it, and the demo fixture
+now projects byes at `0.0` too, so the README's own transcripts run the live code path.
 
 One gap, stated rather than hidden: the surface has been exercised end-to-end over real stdio
 and through an in-process `mcp.Client`, but not yet by hand through a GUI client.

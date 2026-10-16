@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     both spellings are listed rather than just the unprefixed one."""
     cache_dir: Path = Field(default=Path("~/.cache/ffmcp"))
     sims: int = 10_000
+    fixture: str = "demo"
+    """Which committed fixture set demo mode serves (``providers/demo.py``): the synthetic
+    ``demo`` league, or the anonymized real ``snapshot`` the regression tests use."""
 
     @field_validator("cache_dir", mode="after")
     @classmethod

@@ -102,7 +102,7 @@ def test_classify_verdict_bands() -> None:
     assert classify_verdict(-5.0) == "decline"
 
 
-def test_trade_verdict_names_the_biggest_positional_shift_and_a_forced_drop() -> None:
+def test_trade_verdict_names_every_material_positional_shift_and_a_forced_drop() -> None:
     give = (_player(1, "Josh Allen", "QB", 20.0),)
     get = (_player(2, "Saquon Barkley", "RB", 18.0, injury_status="QUESTIONABLE"),)
     evaluation = TradeEvaluation(
@@ -118,8 +118,9 @@ def test_trade_verdict_names_the_biggest_positional_shift_and_a_forced_drop() ->
     )
 
     assert verdict.verdict == "accept"
-    # The lineup loses more at QB than it gains at RB, so QB is the shift worth naming.
-    assert verdict.positional_impact == "Weakens QB by 20.0 started pts/wk."
+    # Both positions move materially, so both are named, the larger first: naming only one
+    # half of a swap describes a different trade.
+    assert verdict.positional_impact == "Started pts/wk: QB -20.0, RB +18.0."
     assert verdict.risks == [
         "Saquon Barkley is Questionable",
         "Must drop B. Guy to stay at roster size",

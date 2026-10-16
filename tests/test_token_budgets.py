@@ -7,6 +7,8 @@ a warning.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from ffmcp.budgets import TOKEN_BUDGETS
@@ -32,9 +34,11 @@ CALLS: tuple[tuple[str, dict[str, object], str], ...] = (
     ("find_waiver_targets", {}, "find_waiver_targets:compact"),
     ("find_waiver_targets", {"detail": "standard"}, "find_waiver_targets:standard"),
     ("find_waiver_targets", {"detail": "full", "limit": 25}, "find_waiver_targets:full"),
+    ("roster_planner", {}, "roster_planner"),
     ("simulate_season", {"n_sims": 2000}, "simulate_season"),
     ("league_standings", {}, "league_standings:compact"),
     ("power_rankings", {}, "power_rankings"),
+    ("league_activity", {}, "league_activity"),
     ("buy_low_sell_high", {}, "buy_low_sell_high"),
     ("player_report", {"name": "Caleb Fairbanks"}, "player_report"),
     ("compare_players", {"names": ["Dominic Okafor", "Elijah Villanueva"]}, "compare_players"),
@@ -47,9 +51,10 @@ assert {key for _, _, key in CALLS} == set(TOKEN_BUDGETS), (
 
 
 @pytest.fixture(autouse=True)
-def _demo_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _demo_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("FFMCP_MODE", "demo")
     monkeypatch.setenv("FFMCP_TEAM_ID", "1")
+    monkeypatch.setenv("FFMCP_CACHE_DIR", str(tmp_path / "cache"))
 
 
 @pytest.mark.parametrize("name,arguments,budget_key", CALLS, ids=[c[2] for c in CALLS])

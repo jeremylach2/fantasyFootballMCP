@@ -11,8 +11,10 @@ from mcp.types import ToolAnnotations
 
 from ffmcp.domain.calibration import source_accuracy
 from ffmcp.domain.models import Player, PlayerWeek
-from ffmcp.domain.optimizer import projected_points
+from ffmcp.domain.optimizer import is_ruled_out, projected_points
+from ffmcp.domain.trades import marginal_value, season_rates
 from ffmcp.domain.usage import MIN_GAMES, UsageProfile
+from ffmcp.domain.valuation import replacement_levels
 from ffmcp.domain.variance import disagreement
 from ffmcp.mcp._shared import (
     OPTIONAL_FAILURES,
@@ -62,9 +64,35 @@ def register_buy_low_sell_high(mcp: MCPServer) -> None:
             owner = {
                 p.player_id: team for team in teams for p in (*team.roster.players, *team.roster.ir)
             }
-            pool_ids = {p.player_id for p in await player_pool(ctx, teams, week)}
+            pool = await player_pool(ctx, teams, week)
+            by_id = {p.player_id: p for p in pool}
             labelled = any(p.games >= MIN_GAMES for p in profiles.values())
             limit = min(max(1, max_per_section), _MAX_PER_SECTION)
+
+            # A buy-low is only worth naming if he would start for somebody: above replacement
+            # at his position, or an upgrade on my own lineup. Rated at the better of his season
+            # projection and his volume (xFP), since the claim is that his scoring will catch
+            # up with the volume. In a one-quarterback league, four free-agent quarterbacks
+            # running below their volume are four players nobody will start.
+            slots = settings.starting_slots
+            mine = list(next(t for t in teams if t.team_id == my_team_id).roster.players)
+            rates = season_rates(pool)
+            levels = replacement_levels(settings, pool, rates)
+            injured_out: list[str] = []
+
+            def relevant(profile: UsageProfile) -> bool:
+                player = by_id.get(profile.player_id)
+                if player is None:
+                    return False
+                if is_ruled_out(player):
+                    status = (player.injury_status or "out").replace("_", " ").title()
+                    injured_out.append(f"{short_name(player.name)} ({status})")
+                    return False
+                rate = max(rates.get(player.player_id, 0.0), profile.expected_ppg)
+                if rate > levels.get(player.position, 0.0):
+                    return True
+                as_rated = {**rates, player.player_id: rate}
+                return marginal_value(mine, player, slots, as_rated) > 0.0
 
             def gap(profile: UsageProfile, direction: str) -> bool:
                 if labelled:
@@ -79,10 +107,13 @@ def register_buy_low_sell_high(mcp: MCPServer) -> None:
                         continue
                     if where == "others" and (team is None or team.team_id == my_team_id):
                         continue
-                    if where == "free" and (team is not None or profile.player_id not in pool_ids):
+                    if where == "free" and (team is not None or profile.player_id not in by_id):
                         continue
-                    if gap(profile, direction):
-                        rows.append((profile, team.name if team is not None else "FA"))
+                    if not gap(profile, direction):
+                        continue
+                    if where != "mine" and not relevant(profile):
+                        continue
+                    rows.append((profile, team.name if team is not None else "FA"))
                 sign = -1.0 if direction == "sell_high" else 1.0
                 rows.sort(key=lambda row: (sign * row[0].luck_ppg, row[0].player_id))
                 return rows[:limit]
@@ -97,6 +128,10 @@ def register_buy_low_sell_high(mcp: MCPServer) -> None:
                 labelled=labelled,
                 min_games=MIN_GAMES,
             )
+            if injured_out:
+                text += "\nInjured, so left out of the buy-low lists: " + ", ".join(
+                    sorted(set(injured_out))
+                )
             return text if caveat is None else f"{text}\n{caveat}"
 
 

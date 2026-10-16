@@ -1,36 +1,54 @@
 """Monte Carlo simulation of the rest of the season.
 
-Each team's weekly score is Normal(mean, sd), clipped at zero. The mean is that team's
-*optimal-lineup* projection (see ``domain.optimizer``), since every manager is assumed to start
-their best legal lineup from here on, held constant across the remaining weeks because ESPN
-publishes no future-week projections through this path. The sd is each starter's sd, summed
-in quadrature and scaled by one measured factor for the correlation between them.
+Each team's score in each remaining week is Normal(mean, sd), clipped at zero, where the mean is
+the team's *optimal-lineup* projection **for that week** (every manager is assumed to start his
+best legal lineup). Which projection a week uses is ``domain.schedule.lineup_inputs``'s single
+definition, shared with trade and waiver valuation: this week's projections and injury
+designations for this week; every player healthy, at his season rate, minus whoever is on bye,
+for every week after. Playoff rounds use their own weeks the same way, summed when a round lasts
+two weeks.
 
-Per-player sds come from ``domain.variance``, where they were fit to a real league's season
-rather than assumed. A caller that knows more about specific players (their own history, a
-second projection source) passes a ``{player_id: sd}`` map; without one, every player gets his
-position's measured spread.
+That per-week mean is the fix for the bug this module used to have. It once held *this week's*
+optimal lineup constant for the whole season, because ESPN publishes no future-week projections,
+so a team with three starters on bye this week was simulated as if they were on bye every week:
+in a live 16-team league that turned a 54% team into an 8% one, while a team with a soft
+matchup this week rode it to 87%.
+
+The sd is each starter's sd, summed in quadrature and scaled by one measured factor for the
+correlation between them (``domain.variance``). On top of the weekly noise, every simulated
+season draws one **team-strength** offset per team, held for the whole season: projections are
+not the truth, and a team's true level is uncertain in a way that does not average out week to
+week (injuries, roster churn, a projection system that simply rates a roster too high). Without
+it, a fixed mean every week makes the top of the table look like near-certainties in week 6. Its
+size, ``TEAM_STRENGTH_SD``, is measured by ``scripts/calibrate.py`` like every other constant.
+
+League formats beyond the default are respected where ESPN reports them: a median game every
+week (two results a week), division winners seeded first, and two-week playoff rounds.
 
 Randomness arrives only through an injected ``numpy.random.Generator``: no module-level global
-state, so a seeded run reproduces exactly. ``win_prob_delta`` evaluates two scenarios against a
-single shared noise array, using common random numbers, for the reason given in its docstring.
+state, so a seeded run reproduces exactly. ``win_prob_delta`` and ``playoff_odds_delta`` evaluate
+two scenarios against a single shared noise array, using common random numbers, for the reason
+given in ``win_prob_delta``'s docstring.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Hashable, Mapping, Sequence
+from dataclasses import dataclass, replace
 
 import numpy as np
 from numpy.typing import NDArray
 
 from ffmcp.domain.models import Frozen, LeagueState, Lineup, Player, Team
 from ffmcp.domain.optimizer import optimize, projected_points
+from ffmcp.domain.schedule import lineup_inputs
 from ffmcp.domain.variance import TEAM_SD_FACTOR, player_sd
 
 PlayerSds = Mapping[int, float]
-"""``{player_id: weekly sd}`` from ``domain.variance.player_sds``."""
+"""``{player_id: weekly sd}`` from ``domain.variance.player_sds``. Describes *this* week's
+projections (it is widened where this week's sources disagree), so it is applied to this week
+only; later weeks use each position's measured spread around the season rate."""
 
 FloatArray = NDArray[np.float64]
 IntArray = NDArray[np.intp]
@@ -48,6 +66,14 @@ DEFAULT_SIMS = 10_000
 DEFAULT_DELTA_SIMS = 2_000
 """Fewer sims suffice for a delta than for a level, because common random numbers cancel most
 of the variance between the two scenarios."""
+
+TEAM_STRENGTH_SD = 10.7
+"""Sd, in points per week, of a team's true scoring level around its projection, drawn once per
+simulated season. Fit by ``scripts/calibrate.py`` (section 8) on a real league's 2024 and 2025
+seasons: across 232 (team, week) starting points, the variance of a team's average miss over
+the rest of the season was 202, of which weekly noise explains 87; the remaining 115 is this
+term squared. In the same script's backtest (section 9) it removed every confident miss: four
+teams the replaced model called 90%+ either way finished the other way, and none did with it."""
 
 _MIN_TEAM_SD = 1.0
 
@@ -100,6 +126,11 @@ class SeasonOutcome(Frozen):
                 return outlook
         raise KeyError(f"team {team_id} is not in this league")
 
+    def playoff_probabilities(self) -> dict[int, float]:
+        """``{team_id: playoff probability in [0, 1]}``: the weights ``domain.schedule`` puts on
+        each team's playoff weeks."""
+        return {team.team_id: team.playoff_odds / 100.0 for team in self.teams}
+
 
 def team_score_model(
     team: Team,
@@ -140,12 +171,24 @@ def lineup_score_model(
     return ScoreModel(team_id=team_id, mean=lineup.projected_points, sd=sd)
 
 
+def week_score_model(
+    team_id: int,
+    players: Sequence[Player],
+    slots: Sequence[str],
+    week: int,
+    current_week: int,
+    sds: PlayerSds | None = None,
+) -> ScoreModel:
+    """A roster's scoring distribution in ``week``, exactly as the season simulation sees it."""
+    return _WeekModels(team_id, players, slots, current_week, sds).model(week)
+
+
 def matchup_win_probability(home: ScoreModel, away: ScoreModel) -> float:
     """``home``'s win probability for a single head-to-head week, in percent.
 
     Closed-form rather than simulated: the difference of two independent Normals is itself
     Normal, so ``P(home > away)`` is one call to the standard normal CDF. Ties are split evenly,
-    matching how ``_simulate_block`` scores them elsewhere in this module.
+    matching how ``_regular_season`` scores them.
     """
     spread = home.mean - away.mean
     sd = math.sqrt(home.sd**2 + away.sd**2)
@@ -155,23 +198,38 @@ def matchup_win_probability(home: ScoreModel, away: ScoreModel) -> float:
 
 
 @dataclass(frozen=True)
+class _Scenario:
+    """Every team's scoring distribution in every remaining week and playoff round. The unit two
+    scenarios differ by in a common-random-numbers comparison."""
+
+    means: FloatArray  # (weeks, teams)
+    sds: FloatArray
+    round_means: FloatArray  # (rounds, teams)
+    round_sds: FloatArray
+
+
+@dataclass(frozen=True)
 class _Season:
     """Everything the vectorized inner loop needs, laid out as arrays once."""
 
     team_ids: tuple[int, ...]
     weeks: tuple[int, ...]
+    current_week: int
+    slots: tuple[str, ...]
+    round_weeks: tuple[tuple[int, ...], ...]
+    """The NFL weeks each playoff round spans."""
     game_week: IntArray
     game_home: IntArray
     game_away: IntArray
     base_wins: FloatArray
     base_points_for: FloatArray
-    means: FloatArray  # (weeks, teams), per-week so a scenario can override a single cell
-    sds: FloatArray
-    team_means: FloatArray  # (teams,), used for playoff games, which have no schedule entry
-    team_sds: FloatArray
+    baseline: _Scenario
     playoff_spots: int
     bracket_seeds: IntArray
     """Seed index occupying each first-round bracket position; -1 is a bye."""
+    median_scoring: bool
+    division_of: IntArray
+    """Each team's division index; seeding puts each division's winner first."""
 
     @property
     def n_teams(self) -> int:
@@ -183,7 +241,12 @@ class _Season:
 
     @property
     def n_rounds(self) -> int:
-        return max(int(self.bracket_seeds.size).bit_length() - 1, 0)
+        return len(self.round_weeks)
+
+    @property
+    def noise_shape(self) -> tuple[int, int]:
+        """Per simulation: one row per week, one per round, and one team-strength row."""
+        return self.n_weeks + self.n_rounds + 1, self.n_teams
 
 
 def _bracket_seeds(playoff_spots: int) -> IntArray:
@@ -199,9 +262,81 @@ def _bracket_seeds(playoff_spots: int) -> IntArray:
     return np.array([seed if seed < playoff_spots else -1 for seed in seeds], dtype=np.intp)
 
 
+def _round_weeks(state: LeagueState, n_rounds: int) -> tuple[tuple[int, ...], ...]:
+    """The NFL weeks of each playoff round. A league whose calendar does not reach (an odd
+    custom setup) has its missing rounds played on the regular season's last week, at season
+    rates, which is the most neutral stand-in available."""
+    settings = state.settings
+    length = max(1, settings.playoff_round_weeks)
+    weeks = settings.playoff_weeks
+    rounds = []
+    for index in range(n_rounds):
+        chunk = weeks[index * length : (index + 1) * length]
+        rounds.append(tuple(chunk) if chunk else (settings.reg_season_weeks + 1 + index,))
+    return tuple(rounds)
+
+
+def _scenario(
+    season: _Season,
+    rosters: Mapping[int, Sequence[Player]],
+    sds: PlayerSds | None,
+    *,
+    base: _Scenario | None = None,
+) -> _Scenario:
+    """Score models for the teams in ``rosters`` (by index); every other column is ``base``'s,
+    or zero without one."""
+    shape_w, shape_r = (season.n_weeks, season.n_teams), (season.n_rounds, season.n_teams)
+    if base is None:
+        means, sds_ = np.zeros(shape_w), np.zeros(shape_w)
+        round_means, round_sds = np.zeros(shape_r), np.zeros(shape_r)
+    else:
+        means, sds_ = base.means.copy(), base.sds.copy()
+        round_means, round_sds = base.round_means.copy(), base.round_sds.copy()
+
+    for team, players in rosters.items():
+        models = _WeekModels(season.team_ids[team], players, season.slots, season.current_week, sds)
+        for index, week in enumerate(season.weeks):
+            weekly = models.model(week)
+            means[index, team], sds_[index, team] = weekly.mean, weekly.sd
+        for index, weeks in enumerate(season.round_weeks):
+            round_models = [models.model(week) for week in weeks]
+            round_means[index, team] = sum(m.mean for m in round_models)
+            round_sds[index, team] = math.sqrt(sum(m.sd**2 for m in round_models))
+    return _Scenario(means, sds_, round_means, round_sds)
+
+
+class _WeekModels:
+    """One roster's ``ScoreModel`` for any week. Weeks whose inputs are identical (the same
+    players on bye, and so on) share an optimal lineup, so each distinct week is optimized
+    once: five or six optimizations a season rather than one per week."""
+
+    def __init__(
+        self,
+        team_id: int,
+        players: Sequence[Player],
+        slots: Sequence[str],
+        current_week: int,
+        sds: PlayerSds | None,
+    ) -> None:
+        self._team_id = team_id
+        self._players = players
+        self._slots = slots
+        self._current_week = current_week
+        self._sds = sds
+        self._cache: dict[Hashable, ScoreModel] = {}
+
+    def model(self, week: int) -> ScoreModel:
+        roster, projections = lineup_inputs(self._players, week, self._current_week)
+        key = None if projections is None else frozenset(projections.items())
+        if key not in self._cache:
+            lineup = optimize(roster, self._slots, projections)
+            sds = self._sds if projections is None else None
+            self._cache[key] = lineup_score_model(self._team_id, lineup, projections, sds)
+        return self._cache[key]
+
+
 def _build_season(state: LeagueState, sds: PlayerSds | None = None) -> _Season:
     settings = state.settings
-    slots = settings.starting_slots
     team_ids = tuple(team.team_id for team in state.teams)
     index_of = {team_id: index for index, team_id in enumerate(team_ids)}
 
@@ -225,25 +360,32 @@ def _build_season(state: LeagueState, sds: PlayerSds | None = None) -> _Season:
     weeks = tuple(sorted({week for week, _, _ in remaining}))
     week_index = {week: index for index, week in enumerate(weeks)}
 
-    models = [team_score_model(team, slots, sds=sds) for team in state.teams]
-    team_means = np.array([model.mean for model in models], dtype=np.float64)
-    team_sds = np.array([model.sd for model in models], dtype=np.float64)
-
-    return _Season(
+    playoff_spots = max(0, min(settings.playoff_team_count, len(team_ids)))
+    bracket = _bracket_seeds(max(1, playoff_spots))
+    n_rounds = max(int(bracket.size).bit_length() - 1, 0)
+    divisions = sorted({team.division_id or 0 for team in state.teams})
+    empty = _Scenario(*(np.zeros((0, 0)) for _ in range(4)))
+    season = _Season(
         team_ids=team_ids,
         weeks=weeks,
+        current_week=state.current_week,
+        slots=settings.starting_slots,
+        round_weeks=_round_weeks(state, n_rounds),
         game_week=np.array([week_index[week] for week, _, _ in remaining], dtype=np.intp),
         game_home=np.array([home for _, home, _ in remaining], dtype=np.intp),
         game_away=np.array([away for _, _, away in remaining], dtype=np.intp),
         base_wins=np.array([t.wins + 0.5 * t.ties for t in state.teams], dtype=np.float64),
         base_points_for=np.array([t.points_for for t in state.teams], dtype=np.float64),
-        means=np.tile(team_means, (len(weeks), 1)),
-        sds=np.tile(team_sds, (len(weeks), 1)),
-        team_means=team_means,
-        team_sds=team_sds,
-        playoff_spots=max(0, min(settings.playoff_team_count, len(team_ids))),
-        bracket_seeds=_bracket_seeds(max(1, min(settings.playoff_team_count, len(team_ids)))),
+        baseline=empty,
+        playoff_spots=playoff_spots,
+        bracket_seeds=bracket,
+        median_scoring=settings.median_scoring,
+        division_of=np.array(
+            [divisions.index(team.division_id or 0) for team in state.teams], dtype=np.intp
+        ),
     )
+    rosters = {index: team.roster.players for index, team in enumerate(state.teams)}
+    return replace(season, baseline=_scenario(season, rosters, sds))
 
 
 @dataclass
@@ -271,17 +413,14 @@ class _Tally:
         self.seeds += other.seeds
 
 
-def _simulate_block(
-    season: _Season, noise: FloatArray, means: FloatArray, sds: FloatArray
-) -> _Tally:
+def _simulate_block(season: _Season, noise: FloatArray, scenario: _Scenario) -> _Tally:
     """One vectorized block of simulated seasons.
 
-    ``noise`` is ``(n_sims, n_weeks + n_rounds, n_teams)`` of standard normals; the caller owns
-    it, which is what makes common random numbers possible.
+    ``noise`` is ``(n_sims, *season.noise_shape)`` of standard normals; the caller owns it,
+    which is what makes common random numbers possible.
     """
     n_teams = season.n_teams
-    n_weeks = season.n_weeks
-    wins, _, order, seed_of_team = _regular_season(season, noise, means, sds)
+    wins, _, order, seed_of_team = _regular_season(season, noise, scenario)
 
     tally = _Tally.empty(n_teams)
     tally.wins = wins.sum(axis=0)
@@ -291,24 +430,34 @@ def _simulate_block(
         np.bincount(flat, minlength=n_teams * n_teams).reshape(n_teams, n_teams).astype(np.float64)
     )
 
-    champions = _simulate_bracket(season, noise[:, n_weeks:, :], order)
+    champions = _simulate_bracket(season, noise, order, scenario)
     tally.titles = np.bincount(champions, minlength=n_teams).astype(np.float64)
     return tally
 
 
+def _strength(season: _Season, noise: FloatArray) -> FloatArray:
+    """``(n_sims, n_teams)``: each simulated season's team-strength offsets, in points."""
+    strength: FloatArray = TEAM_STRENGTH_SD * noise[:, -1, :]
+    return strength
+
+
 def _regular_season(
-    season: _Season, noise: FloatArray, means: FloatArray, sds: FloatArray
+    season: _Season, noise: FloatArray, scenario: _Scenario
 ) -> tuple[FloatArray, FloatArray, IntArray, IntArray]:
     """Play out the remaining regular season: ``(wins, week_results, order, seed_of_team)``.
 
-    ``week_results[s, w, t]`` is team ``t``'s result in week ``w`` of simulation ``s``: 1 for a
-    win, 0 for a loss, 0.5 for a tie, NaN for a bye. ``order[s]`` lists teams from the top seed
-    down and ``seed_of_team`` is its inverse.
+    ``week_results[s, w, t]`` is team ``t``'s head-to-head result in week ``w`` of simulation
+    ``s``: 1 for a win, 0 for a loss, 0.5 for a tie, NaN for a bye. ``order[s]`` lists teams
+    from the top seed down and ``seed_of_team`` is its inverse.
     """
     n_sims = noise.shape[0]
     n_weeks = season.n_weeks
 
-    scores = means[None, :, :] + sds[None, :, :] * noise[:, :n_weeks, :]
+    scores = (
+        scenario.means[None, :, :]
+        + _strength(season, noise)[:, None, :]
+        + scenario.sds[None, :, :] * noise[:, :n_weeks, :]
+    )
     np.clip(scores, 0.0, None, out=scores)
 
     wins = np.tile(season.base_wins, (n_sims, 1))
@@ -327,28 +476,57 @@ def _regular_season(
         points_for[:, home] += home_score
         points_for[:, away] += away_score
 
-    # Seeding: wins first, total points for as the tiebreak, the standard ESPN ordering.
-    # lexsort takes its primary key last, and both keys are negated to sort descending.
-    order: IntArray = np.lexsort((-points_for, -wins), axis=1)
+    if season.median_scoring:
+        # A second game every week, against the league median: above it is a win.
+        played = ~np.isnan(week_results)
+        masked = np.where(played, scores, np.nan)
+        median = np.nanmedian(masked, axis=2, keepdims=True)
+        above = np.where(masked > median, 1.0, np.where(masked < median, 0.0, 0.5))
+        wins += np.nansum(np.where(played, above, 0.0), axis=1)
+
+    # Seeding: wins first, total points for as the tiebreak (ESPN's default), and division
+    # winners ahead of everyone else when there is more than one division. lexsort takes its
+    # primary key last, and keys are negated to sort descending.
+    division_winner = _division_winners(season, wins, points_for)
+    order: IntArray = np.lexsort((-points_for, -wins, -division_winner), axis=1)
     seed_of_team: IntArray = np.argsort(order, axis=1)  # inverse permutation
     return wins, week_results, order, seed_of_team
 
 
-def _simulate_bracket(season: _Season, noise: FloatArray, order: IntArray) -> IntArray:
-    """Single-elimination playoff, one fresh score per team per round.
+def _division_winners(season: _Season, wins: FloatArray, points_for: FloatArray) -> FloatArray:
+    """1.0 for each division's best record (points for breaking ties), else 0.0. All zeros in
+    a single-division league, where it changes nothing."""
+    winners = np.zeros_like(wins)
+    divisions = np.unique(season.division_of)
+    if divisions.size <= 1:
+        return winners
+    key = wins * 1e6 + points_for
+    for division in divisions:
+        members = np.flatnonzero(season.division_of == division)
+        best = members[np.argmax(key[:, members], axis=1)]
+        winners[np.arange(wins.shape[0]), best] = 1.0
+    return winners
 
-    Playoff games use each team's own weekly distribution rather than a per-week mean: they fall
-    outside the regular-season schedule, so any single-week lineup scenario has long since
-    stopped applying.
-    """
+
+def _simulate_bracket(
+    season: _Season, noise: FloatArray, order: IntArray, scenario: _Scenario
+) -> IntArray:
+    """Single-elimination playoff, one fresh score per team per round, from that round's own
+    weeks (and the same season-long team strength as the regular season)."""
     n_sims = order.shape[0]
     bracket = np.full((n_sims, season.bracket_seeds.size), -1, dtype=np.intp)
     for position, seed in enumerate(season.bracket_seeds):
         if seed >= 0:
             bracket[:, position] = order[:, seed]
 
+    strength = _strength(season, noise)
     for round_index in range(season.n_rounds):
-        scores = season.team_means[None, :] + season.team_sds[None, :] * noise[:, round_index, :]
+        length = len(season.round_weeks[round_index])
+        scores = (
+            scenario.round_means[round_index][None, :]
+            + length * strength
+            + scenario.round_sds[round_index][None, :] * noise[:, season.n_weeks + round_index, :]
+        )
         upper, lower = bracket[:, 0::2], bracket[:, 1::2]
         upper_score = np.take_along_axis(scores, np.maximum(upper, 0), axis=1)
         lower_score = np.take_along_axis(scores, np.maximum(lower, 0), axis=1)
@@ -361,8 +539,7 @@ def _simulate_bracket(season: _Season, noise: FloatArray, order: IntArray) -> In
 
 def _run(
     season: _Season,
-    means: FloatArray,
-    sds: FloatArray,
+    scenario: _Scenario,
     n_sims: int,
     rng: np.random.Generator,
     progress: ProgressCallback | None = None,
@@ -376,7 +553,6 @@ def _run(
     if n_sims < 1:
         raise ValueError("n_sims must be at least 1")
     chunk_size = max(1, min(math.ceil(n_sims / _PROGRESS_STEPS), _MAX_CHUNK))
-    shape_tail = (season.n_weeks + season.n_rounds, season.n_teams)
 
     tally = _Tally.empty(season.n_teams)
     completed = 0
@@ -386,10 +562,10 @@ def _run(
         if shared_noise is not None and chunk_index < len(shared_noise):
             noise = shared_noise[chunk_index]
         else:
-            noise = rng.standard_normal((size, *shape_tail))
+            noise = rng.standard_normal((size, *season.noise_shape))
             if shared_noise is not None:
                 shared_noise.append(noise)
-        tally.add(_simulate_block(season, noise, means, sds))
+        tally.add(_simulate_block(season, noise, scenario))
         completed += size
         chunk_index += 1
         if progress is not None:
@@ -408,12 +584,13 @@ def simulate_rest_of_season(
     """Playoff odds, mean final wins, seed distribution and title odds for every team.
 
     The league's own playoff format is respected: ``playoff_team_count`` teams advance, seeded
-    by wins then points for, into a standard single-elimination bracket with byes for the top
-    seeds when the field is not a power of two.
+    by wins then points for (division winners first, where there are divisions), into a
+    standard single-elimination bracket with byes for the top seeds when the field is not a
+    power of two.
     """
     generator = np.random.default_rng(DEFAULT_SEED) if rng is None else rng
     season = _build_season(state, player_sds)
-    tally = _run(season, season.means, season.sds, n_sims, generator, progress)
+    tally = _run(season, season.baseline, n_sims, generator, progress)
 
     percent = 100.0 / n_sims
     teams = tuple(
@@ -471,14 +648,17 @@ def win_prob_delta(
     if baseline.week not in season.weeks:
         raise ValueError(f"week {baseline.week} is not in the remaining schedule")
     week = season.weeks.index(baseline.week)
+    team = _team_index(season, baseline.team_id)
 
-    def arrays(scenario: LineupScenario) -> tuple[FloatArray, FloatArray]:
+    def arrays(scenario: LineupScenario) -> _Scenario:
         model = lineup_score_model(scenario.team_id, scenario.lineup, sds=player_sds)
-        return _scenario_arrays(season, [model], week_index=week)
+        means, sds = season.baseline.means.copy(), season.baseline.sds.copy()
+        means[week, team], sds[week, team] = model.mean, model.sd
+        return _Scenario(means, sds, season.baseline.round_means, season.baseline.round_sds)
 
     return _odds_delta(
         season,
-        _team_index(season, baseline.team_id),
+        team,
         arrays(baseline),
         arrays(counterfactual),
         n_sims=n_sims,
@@ -490,28 +670,30 @@ def win_prob_delta(
 def playoff_odds_delta(
     state: LeagueState,
     team_id: int,
-    baseline: Sequence[ScoreModel],
-    counterfactual: Sequence[ScoreModel],
+    rosters: Mapping[int, Sequence[Player]],
     rng: np.random.Generator | None = None,
     *,
     n_sims: int = DEFAULT_DELTA_SIMS,
     common_random_numbers: bool = True,
     player_sds: PlayerSds | None = None,
 ) -> float:
-    """Change in ``team_id``'s playoff odds, in percentage points, between two whole-season
-    scenarios.
+    """Change in ``team_id``'s playoff odds, in percentage points, if the teams in ``rosters``
+    (``{team_id: players}``) carried those rosters for the rest of the season instead.
 
     Where ``win_prob_delta`` prices a single week's lineup, this prices a change that lasts the
-    rest of the season, such as a trade or a waiver claim, by overriding the scoring models of
-    every team it touches (each ``ScoreModel`` names its own team) for every remaining week.
-    Both scenarios share one set of draws, for the reason ``win_prob_delta`` sets out at length.
+    rest of the season, such as a trade or a waiver claim. Each changed roster is re-modelled
+    week by week exactly as the baseline is, byes and all, so a trade for a star on bye this
+    week is priced at what he does in the weeks he plays. Both scenarios share one set of
+    draws, for the reason ``win_prob_delta`` sets out at length.
     """
     season = _build_season(state, player_sds)
+    changed = {_team_index(season, tid): players for tid, players in rosters.items()}
+    counterfactual = _scenario(season, changed, player_sds, base=season.baseline)
     return _odds_delta(
         season,
         _team_index(season, team_id),
-        _scenario_arrays(season, baseline, week_index=None),
-        _scenario_arrays(season, counterfactual, week_index=None),
+        season.baseline,
+        counterfactual,
         n_sims=n_sims,
         rng=np.random.default_rng(DEFAULT_SEED) if rng is None else rng,
         common_random_numbers=common_random_numbers,
@@ -558,8 +740,8 @@ def week_stakes(
     remaining = n_sims
     while remaining > 0:
         size = min(_MAX_CHUNK, remaining)
-        noise = generator.standard_normal((size, season.n_weeks + season.n_rounds, season.n_teams))
-        _, results, _, seed_of_team = _regular_season(season, noise, season.means, season.sds)
+        noise = generator.standard_normal((size, *season.noise_shape))
+        _, results, _, seed_of_team = _regular_season(season, noise, season.baseline)
         result = results[:, week_index, team]
         if np.all(np.isnan(result)):
             return None
@@ -585,24 +767,11 @@ def _team_index(season: _Season, team_id: int) -> int:
         raise KeyError(f"team {team_id} is not in this league") from None
 
 
-def _scenario_arrays(
-    season: _Season, models: Sequence[ScoreModel], *, week_index: int | None
-) -> tuple[FloatArray, FloatArray]:
-    """The season's mean/sd grids with each model overlaid, on one week or on all of them."""
-    means, sds = season.means.copy(), season.sds.copy()
-    for model in models:
-        team = _team_index(season, model.team_id)
-        weeks = slice(None) if week_index is None else slice(week_index, week_index + 1)
-        means[weeks, team] = model.mean
-        sds[weeks, team] = model.sd
-    return means, sds
-
-
 def _odds_delta(
     season: _Season,
     team: int,
-    baseline: tuple[FloatArray, FloatArray],
-    counterfactual: tuple[FloatArray, FloatArray],
+    baseline: _Scenario,
+    counterfactual: _Scenario,
     *,
     n_sims: int,
     rng: np.random.Generator,
@@ -613,6 +782,6 @@ def _odds_delta(
     The shared noise list is the whole trick: recorded on the first run, replayed on the second.
     """
     noise: list[FloatArray] | None = [] if common_random_numbers else None
-    base = _run(season, *baseline, n_sims, rng, shared_noise=noise)
-    alt = _run(season, *counterfactual, n_sims, rng, shared_noise=noise)
+    base = _run(season, baseline, n_sims, rng, shared_noise=noise)
+    alt = _run(season, counterfactual, n_sims, rng, shared_noise=noise)
     return float((alt.playoffs[team] - base.playoffs[team]) * 100.0 / n_sims)

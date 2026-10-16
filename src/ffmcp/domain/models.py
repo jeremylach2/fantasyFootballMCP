@@ -6,7 +6,13 @@ simulator and the renderers, and nothing downstream should be able to mutate a s
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
+
+FREE_AGENT_TEAM = "FA"
+"""``Player.pro_team`` for a player no NFL team employs (released, unsigned). He has no games
+to score in, whatever his projection says."""
 
 NON_STARTING_SLOTS = frozenset({"BE", "IR"})
 """Roster slots that are not part of the starting lineup. ESPN reports bench and injured
@@ -28,6 +34,9 @@ class MarketSignal(Frozen):
     percent_owned: float | None = None
     percent_started: float | None = None
     trending_adds: int | None = None
+    injury_detail: str | None = None
+    """What the injury is (``"Knee - ACL, surgery"``), from a source that reports it; the
+    designation itself (questionable, out) stays ESPN's, on ``Player.injury_status``."""
 
 
 class Player(Frozen):
@@ -52,6 +61,13 @@ class Player(Frozen):
     """Projected points per game over the season, where the provider publishes one. Stands in
     for a weekly projection the player does not have this week (a bye), so a player is not
     valued at zero for the rest of the season just because this week happens to be his bye."""
+    outlook: tuple[Projection, ...] = ()
+    """Week-by-week projections for *later* weeks, from a source that publishes them (ESPN does
+    not). Empty for most players. Filled where it matters most: an injured player whose season
+    rate is zero, whose outlook says when he is expected back (zeros until then)."""
+    kickoff: datetime | None = None
+    """This week's kickoff for his NFL game (timezone-aware), or ``None`` on a bye or when the
+    provider does not know. Once it passes, his lineup slot is locked."""
 
 
 class RosterSlot(Frozen):
@@ -116,7 +132,11 @@ class Team(Frozen):
     points_against: float
     standing: int
     playoff_pct: float
+    """The *provider's* playoff odds (ESPN's). Shown nowhere: every tool reports this server's
+    own simulation instead, so the user sees one number (see ``domain.simulate``)."""
     roster: Roster
+    waiver_rank: int | None = None
+    division_id: int | None = None
 
 
 class Matchup(Frozen):
@@ -143,6 +163,16 @@ class LeagueSettings(Frozen):
     second projection source's scoring variants matches this league."""
     playoff_round_weeks: int = 1
     """NFL weeks per playoff round (ESPN lets a league play two-week rounds)."""
+    median_scoring: bool = False
+    """Whether every team also plays the league median each week (two results a week)."""
+    division_count: int = 1
+    """Divisions; with more than one, each division winner is seeded ahead of the wild cards."""
+    playoff_seed_tie_rule: str | None = None
+    """How tied records are seeded. ``domain.simulate`` models total points scored, which is
+    ESPN's default; any other rule is approximated by it."""
+    waiver_budget: int | None = None
+    """FAAB budget, or ``None`` for a rolling-priority waiver order."""
+    trade_deadline: datetime | None = None
 
     @property
     def playoff_weeks(self) -> tuple[int, ...]:
@@ -266,6 +296,17 @@ class GameLine(Frozen):
     """This team's point spread, negative when favoured."""
     total: float
     kickoff: str | None = None
+
+
+class Transaction(Frozen):
+    """One completed league transaction: who moved which players, and how."""
+
+    when: datetime
+    team_id: int | None
+    action: str
+    """``"add"``, ``"drop"``, ``"trade"`` or ``"waiver"``, normalized by the provider."""
+    player_name: str
+    position: str | None = None
 
 
 class TradeOffer(Frozen):

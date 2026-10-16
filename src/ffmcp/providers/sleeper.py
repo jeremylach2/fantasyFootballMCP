@@ -8,6 +8,7 @@ reduction (docs/architecture.md §3).
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Sequence
 from typing import Any
 
@@ -25,14 +26,33 @@ their own app reads, and it has been stable for years, but it carries no compati
 so every caller treats a failure here as "no second opinion", never as an error."""
 
 STATE_TTL = 3_600
-PLAYERS_TTL = 86_400
+PLAYERS_TTL = 6 * 3_600
+"""The player dump is ~14.6 MB, but it is also where injury detail lives, and that changes
+through the week. Four fetches a day keep a Friday injury report from waiting until Saturday."""
 TRENDING_TTL = 900
 PROJECTIONS_TTL = 3_600
 PAST_PROJECTIONS_TTL = 7 * 86_400
+OUTLOOK_TTL = 6 * 3_600
+"""A player's week-by-week outlook moves with injury news, which lands a few times a week."""
+OUTLOOK_URL = "https://api.sleeper.com/projections/nfl/player"
+"""Per-player, every week of the season in one small response (~2 KB). The weekly endpoint
+above is ~2 MB per week, so it is the wrong tool for ten weeks of a handful of players. Like
+``PROJECTIONS_URL``, undocumented: a failure means "no outlook", never an error."""
 
 _PROJECTED_POSITIONS = ("QB", "RB", "WR", "TE", "K", "DEF")
 """Requested explicitly: unfiltered, the payload is 5.7 MB, mostly defensive players no
 fantasy lineup here can start. Filtered, it is about 2 MB."""
+
+
+def _injury_detail(info: dict[str, Any]) -> str:
+    """``"Knee - ACL, surgery"``, or ``""`` for a healthy player. Sleeper also has a
+    practice-participation field, but in a live check it was filled for one player of 11,000,
+    so it is not kept."""
+    part = info.get("injury_body_part") or ""
+    if not part or not info.get("injury_status"):
+        return ""
+    notes = info.get("injury_notes")
+    return f"{part}, {notes.lower()}" if notes else str(part)
 
 
 class SleeperMarketProvider:
@@ -42,6 +62,7 @@ class SleeperMarketProvider:
         self._client = client
         self._cache = cache
         self._identity: IdentityIndex | None = None
+        self._index: dict[str, dict[str, str]] = {}
 
     async def get_current_season(self) -> int:
         state = await self._cache.get_or_fetch("v1:sleeper:state", STATE_TTL, self._fetch_state)
@@ -72,7 +93,8 @@ class SleeperMarketProvider:
         if sleeper_id is None:
             return None
         trending = await self.get_trending_adds()
-        return MarketSignal(trending_adds=trending.get(sleeper_id))
+        injury = self._index.get(sleeper_id, {}).get("injury") or None
+        return MarketSignal(trending_adds=trending.get(sleeper_id), injury_detail=injury)
 
     async def get_alt_projections(
         self, week: int, players: Sequence[Player], *, reception_points: float = 1.0
@@ -113,11 +135,55 @@ class SleeperMarketProvider:
                 result[player.player_id] = standard + reception_points * (ppr - standard)
         return result
 
-    async def _get_identity(self) -> IdentityIndex:
-        if self._identity is None:
-            index = await self._cache.get_or_fetch(
-                "v1:sleeper:players", PLAYERS_TTL, self._fetch_player_index
+    async def get_outlook(
+        self, players: Sequence[Player], *, reception_points: float = 1.0
+    ) -> dict[int, dict[int, float]]:
+        """Each player's projection for every remaining week, from Sleeper's per-player view.
+
+        This is what an injured player's value needs and ESPN cannot give: ESPN's season rate
+        for a player on injured reserve is zero, while Sleeper projects zeros until his
+        expected return and real numbers after it. A week Sleeper has no entry for (his bye, or
+        no projection at all) is left out rather than read as zero.
+        """
+        season = await self.get_current_season()
+        current = await self.get_current_week()
+        identity = await self._get_identity()
+
+        async def one(player: Player) -> tuple[int, dict[int, float]]:
+            sleeper_id = identity.resolve(
+                player.player_id, player.name, player.position, player.pro_team
             )
+            if sleeper_id is None:
+                return player.player_id, {}
+
+            async def fetch() -> dict[str, list[float]]:
+                data = await self._get_json_url(
+                    f"{OUTLOOK_URL}/{sleeper_id}?season_type=regular&season={season}&grouping=week"
+                )
+                reduced: dict[str, list[float]] = {}
+                for week, entry in (data or {}).items():
+                    stats = (entry or {}).get("stats") or {}
+                    standard, ppr = stats.get("pts_std"), stats.get("pts_ppr")
+                    if standard is not None and ppr is not None:
+                        reduced[str(week)] = [float(standard), float(ppr)]
+                return reduced
+
+            key = f"v1:sleeper:outlook:{season}:{sleeper_id}"
+            weeks = await self._cache.get_or_fetch(key, OUTLOOK_TTL, fetch)
+            return player.player_id, {
+                int(week): standard + reception_points * (ppr - standard)
+                for week, (standard, ppr) in weeks.items()
+                if int(week) > current
+            }
+
+        return dict(await asyncio.gather(*(one(player) for player in players)))
+
+    async def _get_identity(self) -> IdentityIndex:
+        index = await self._cache.get_or_fetch(
+            "v2:sleeper:players", PLAYERS_TTL, self._fetch_player_index
+        )
+        if self._identity is None or index is not self._index:
+            self._index = index
             self._identity = IdentityIndex.build(index)
         return self._identity
 
@@ -133,6 +199,7 @@ class SleeperMarketProvider:
                 or f"{info.get('first_name', '')} {info.get('last_name', '')}".strip(),
                 "pos": info.get("position") or "",
                 "team": info.get("team") or "",
+                "injury": _injury_detail(info),
             }
             for player_id, info in raw.items()
             if info.get("position")

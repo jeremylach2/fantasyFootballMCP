@@ -31,7 +31,7 @@ from typing import Any
 import numpy as np
 
 from ffmcp.domain.models import LeagueSettings, Player, PlayerWeek, Team, UsageWeek
-from ffmcp.domain.optimizer import optimize
+from ffmcp.domain.optimizer import optimize, projected_points
 from ffmcp.domain.variance import position_fraction
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
@@ -60,9 +60,24 @@ def _bye_weeks(
 
 
 def _rate(player: Player, rng: np.random.Generator) -> float:
-    if player.projection is not None:
-        return player.projection.points
+    points = projected_points(player)
+    if points is not None:
+        return points
     return round(_DEFAULT_RATES.get(player.position, 8.0) * float(rng.uniform(0.9, 1.2)), 1)
+
+
+_VALUE_FLOOR = {"QB": 14.0, "RB": 6.0, "WR": 6.0, "TE": 5.0}
+"""Points per game below which the invented trade market values a player at nothing."""
+
+
+def _trade_value(player: Player, rate: float) -> float | None:
+    """An invented market value, FantasyCalc-shaped: steeply convex in points above a
+    position floor, and nothing for kickers and defenses, which that market does not list.
+    A one-quarterback league's market discounts quarterbacks, so their floor is high."""
+    floor = _VALUE_FLOOR.get(player.position)
+    if floor is None or rate <= floor:
+        return None
+    return float(round(30.0 * (rate - floor) ** 1.5))
 
 
 def _volume(position: str, xfp: float) -> dict[str, float]:
@@ -98,10 +113,12 @@ def main() -> None:
     everyone = [p for _, p, _ in rostered] + free_agents
 
     pro_teams = sorted({p.pro_team for p in everyone})
-    on_bye_now = {p.pro_team for p in everyone if p.projection is None and not p.injured}
+    on_bye_now = {p.pro_team for p in everyone if p.bye_week == CURRENT_WEEK}
     byes = _bye_weeks(pro_teams, on_bye_now, rng)
     rates = {p.player_id: _rate(p, rng) for p in everyone}
-    season_rates = {str(p.player_id): rates[p.player_id] for p in everyone if p.projection is None}
+    season_rates = {
+        str(p.player_id): rates[p.player_id] for p in everyone if projected_points(p) is None
+    }
 
     buy_low_id = next(
         p.player_id
@@ -151,17 +168,18 @@ def main() -> None:
             ]
             if team_id == INATTENTIVE_TEAM_ID:
                 # This manager sets the lineup from memory: byes go unnoticed, so a player
-                # with no game can stay in the lineup, and most weeks a hunch starts a bench
-                # player. Both are how real lineups lose projected points.
+                # with no game can stay in the lineup, and every week a hunch starts the bench
+                # player the projections like least. Both are how real lineups lose projected
+                # points, and placing it deterministically keeps the demo's tag from depending
+                # on which bench player a random draw happens to pick.
                 for player, _ in members:
                     if player.player_id not in chosen:
                         chosen[player.player_id] = rates[player.player_id]
-                if rng.random() < 0.8:
-                    best = optimize(active, settings.starting_slots, chosen)
-                    starting = {p.player_id for p in best.started}
-                    bench = sorted(pid for pid in chosen if pid not in starting)
-                    if bench:
-                        chosen[bench[int(rng.integers(len(bench)))]] = 99.0
+                best = optimize(active, settings.starting_slots, chosen)
+                starting = {p.player_id for p in best.started}
+                bench = [pid for pid in chosen if pid not in starting]
+                if bench:
+                    chosen[min(bench, key=lambda pid: (chosen[pid], pid))] = 99.0
             lineup = optimize(active, settings.starting_slots, chosen)
             slot_of = {s.player.player_id: s.slot for s in lineup.slots if s.player is not None}
             # Scale the starters so the week adds up to the score the league fixture already
@@ -246,9 +264,7 @@ def main() -> None:
         week_alt: dict[str, float] = {}
         for p in everyone:
             base = (
-                projected.get((week, p.player_id))
-                if week != CURRENT_WEEK
-                else (p.projection.points if p.projection else None)
+                projected.get((week, p.player_id)) if week != CURRENT_WEEK else projected_points(p)
             )
             if base is None:
                 continue
@@ -267,6 +283,30 @@ def main() -> None:
         spread = round(float(rng.normal(0.0, 4.5)) * 2) / 2
         lines.append({"home": home, "away": away, "total": total, "home_spread": spread})
 
+    # --- market values and a few of this week's transactions (no randomness: derived)
+    trade_values = {
+        str(p.player_id): value
+        for p in everyone
+        if (value := _trade_value(p, rates[p.player_id])) is not None
+    }
+    activity = []
+    for day, team_id in ((20, 2), (21, 5), (21, 8)):
+        team = next(t for t in teams if t.team_id == team_id)
+        added = min(team.roster.bench, key=lambda q: (rates[q.player_id], q.player_id))
+        dropped = free_agents[team_id % len(free_agents)]
+        when = f"2026-10-{day}T15:00:00Z"
+        for player, action in ((added, "add"), (dropped, "drop")):
+            activity.append(
+                {
+                    "when": when,
+                    "team_id": team_id,
+                    "action": action,
+                    "player_name": player.name,
+                    "position": player.position,
+                }
+            )
+    activity.sort(key=lambda t: t["when"], reverse=True)
+
     payload: dict[str, Any] = {
         "bye_weeks": byes,
         "season_rates": season_rates,
@@ -274,6 +314,8 @@ def main() -> None:
         "usage": [row.model_dump(mode="json", exclude_none=True) for row in usage],
         "alt_projections": alt,
         "game_lines": lines,
+        "trade_values": trade_values,
+        "activity": activity,
     }
     out = FIXTURES_DIR / "demo_insights.json"
     out.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")

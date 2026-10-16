@@ -11,9 +11,10 @@ import argparse
 import hmac
 import logging
 import sys
-from collections.abc import AsyncGenerator, Mapping
+from collections.abc import AsyncGenerator, Callable, Mapping
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 import anyio
 import httpx2
@@ -26,15 +27,23 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from ffmcp import __version__
 from ffmcp.config import ConfigurationError, Settings, load_settings
 from ffmcp.errors import FFMCPError
-from ffmcp.providers.base import LeagueProvider, MarketProvider, OddsProvider, UsageProvider
+from ffmcp.providers.base import (
+    LeagueProvider,
+    MarketProvider,
+    OddsProvider,
+    TradeValueProvider,
+    UsageProvider,
+)
 from ffmcp.providers.cache import Cache
 from ffmcp.providers.demo import (
     DemoLeagueProvider,
     DemoMarketProvider,
     DemoOddsProvider,
+    DemoTradeValueProvider,
     DemoUsageProvider,
 )
 from ffmcp.providers.espn import EspnLeagueProvider
+from ffmcp.providers.fantasycalc import FantasyCalcValueProvider
 from ffmcp.providers.nflverse import NflverseUsageProvider
 from ffmcp.providers.odds import OddsApiProvider
 from ffmcp.providers.sleeper import SleeperMarketProvider
@@ -59,6 +68,19 @@ CACHE_HINTS: Mapping[CacheableMethod, CacheHint] = {
 }
 
 
+def system_clock() -> datetime:
+    return datetime.now(UTC)
+
+
+def fixed_clock(at: datetime) -> Callable[[], datetime]:
+    """A clock stopped at ``at``: demo mode's "now"."""
+
+    def clock() -> datetime:
+        return at
+
+    return clock
+
+
 @dataclass
 class AppContext:
     """What ``mcp/tools_*.py`` reads off ``ctx.request_context.lifespan_context``."""
@@ -69,6 +91,10 @@ class AppContext:
     market: MarketProvider
     usage: UsageProvider
     odds: OddsProvider
+    values: TradeValueProvider
+    clock: Callable[[], datetime] = field(default=lambda: system_clock())
+    """The current instant. Demo mode replays the moment its fixture was recorded, so lineup
+    locks and trade deadlines read the same in a test as they did on the day."""
 
 
 _current_app_context: AppContext | None = None
@@ -103,13 +129,19 @@ async def app_lifespan(_server: MCPServer) -> AsyncGenerator[AppContext]:
     market: MarketProvider
     usage: UsageProvider
     odds: OddsProvider
+    values: TradeValueProvider
     http_client: httpx2.AsyncClient | None = None
+    clock: Callable[[], datetime] = system_clock
 
     if settings.mode == "demo":
-        league = DemoLeagueProvider()
-        market = DemoMarketProvider()
-        usage = DemoUsageProvider()
-        odds = DemoOddsProvider()
+        demo_league = DemoLeagueProvider(settings.fixture)
+        league = demo_league
+        if demo_league.recorded_at is not None:
+            clock = fixed_clock(demo_league.recorded_at)
+        market = DemoMarketProvider(settings.fixture)
+        usage = DemoUsageProvider(settings.fixture)
+        odds = DemoOddsProvider(settings.fixture)
+        values = DemoTradeValueProvider(settings.fixture)
     else:
         assert settings.league_id is not None  # guaranteed by load_settings() in live mode
         http_client = httpx2.AsyncClient(timeout=httpx2.Timeout(15.0, connect=5.0))
@@ -131,9 +163,17 @@ async def app_lifespan(_server: MCPServer) -> AsyncGenerator[AppContext]:
             cache,
             settings.odds_api_key.get_secret_value() if settings.odds_api_key else None,
         )
+        values = FantasyCalcValueProvider(http_client, cache)
 
     app_context = AppContext(
-        settings=settings, cache=cache, league=league, market=market, usage=usage, odds=odds
+        settings=settings,
+        cache=cache,
+        league=league,
+        market=market,
+        usage=usage,
+        odds=odds,
+        values=values,
+        clock=clock,
     )
     _current_app_context = app_context
     try:
@@ -179,10 +219,12 @@ def build_server() -> MCPServer:
     tools_trade.register_find_trades(mcp)
     tools_trade.register_evaluate_trade(mcp)
     tools_roster.register_find_waiver_targets(mcp)
+    tools_roster.register_roster_planner(mcp)
     tools_insights.register_buy_low_sell_high(mcp)
     tools_league.register_simulate_season(mcp)
     tools_league.register_league_standings(mcp)
     tools_league.register_power_rankings(mcp)
+    tools_league.register_league_activity(mcp)
     tools_roster.register_player_report(mcp)
     tools_roster.register_compare_players(mcp)
     tools_insights.register_projection_accuracy(mcp)

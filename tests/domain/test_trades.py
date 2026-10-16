@@ -24,6 +24,7 @@ from ffmcp.domain.models import (
     Team,
     TradeOffer,
 )
+from ffmcp.domain.schedule import WeekWeight
 from ffmcp.domain.trades import (
     apply_offer,
     evaluate,
@@ -376,3 +377,120 @@ def test_search_does_not_repeat_one_trade_padded_with_worthless_bench_players() 
         for evaluation in results
     }
     assert len(seen) == len(results), f"duplicate offers by value: {results}"
+
+
+# --- What a real manager accepts ------------------------------------------------------------
+
+
+def _with_star_on_bye(state: LeagueState, team_id: int) -> tuple[LeagueState, Player]:
+    """``team_id``'s best receiver, made a star on his bye week: projected 0.0 this week (as
+    ESPN reports a bye), 18 points a week otherwise. The team also gets a third receiver, so
+    that losing the star costs it 7 points a week, less than a better quarterback gains it."""
+    star = player_at(state, team_id, "WR").model_copy(
+        update={
+            "bye_week": state.current_week,
+            "season_rate": 18.0,
+            "projection": Projection(week=state.current_week, points=0.0),
+        }
+    )
+    teams = []
+    for team in state.teams:
+        if team.team_id == team_id:
+            depth = star.model_copy(
+                update={
+                    "player_id": 9_999,
+                    "name": "Depth WR",
+                    "bye_week": None,
+                    "season_rate": None,
+                    "projection": Projection(week=state.current_week, points=13.5),
+                }
+            )
+            bench = tuple(star if p.player_id == star.player_id else p for p in team.roster.bench)
+            bench = (*bench, depth)
+            team = team.model_copy(
+                update={"roster": team.roster.model_copy(update={"bench": bench})}
+            )
+        teams.append(team)
+    return state.model_copy(update={"teams": tuple(teams)}), star
+
+
+def test_a_star_on_his_bye_week_can_be_a_trade_target() -> None:
+    """The screen once priced everyone at this week's projection, so a star on bye was worth
+    nothing to anyone and could never be offered for."""
+    state, star = _with_star_on_bye(make_state(), 2)
+    weights = {
+        team.team_id: tuple(WeekWeight(week=w, weight=1.0) for w in range(3, 9))
+        for team in state.teams
+    }
+    offers = search(state, 1, 10, partner_team_id=2, week_weights=weights)
+    assert any(star.player_id in {p.player_id for p in e.offer.get} for e in offers)
+
+
+def test_a_lopsided_offer_by_market_value_is_dropped() -> None:
+    state = make_state()
+    values_fair = {p.player_id: 100.0 for team in state.teams for p in team.roster.players}
+    fair = search(state, 1, 10, market_values=values_fair)
+    assert fair
+
+    # Make everything I could ask for worth ten times what I could give.
+    mine = {p.player_id for p in state.team(1).roster.players}
+    lopsided = {pid: (100.0 if pid in mine else 1_000.0) for pid in values_fair}
+    assert search(state, 1, 10, market_values=lopsided) == []
+
+
+def test_an_evaluation_knows_both_sides_market_value() -> None:
+    state = make_state()
+    offer = TradeOffer(
+        partner_team_id=2,
+        give=(player_at(state, 1, "QB", 1),),
+        get=(player_at(state, 2, "RB"),),
+    )
+    values = {offer.give[0].player_id: 267.0, offer.get[0].player_id: 3190.0}
+    evaluation = evaluate(
+        offer, state.team(1).roster, state.team(2).roster, SLOTS, market_values=values
+    )
+    assert (evaluation.market_given, evaluation.market_received) == (267.0, 3190.0)
+    assert not evaluation.market_plausible
+
+
+def test_kickers_and_defenses_are_only_traded_when_asked_for() -> None:
+    kicker = Player(
+        player_id=777,
+        name="Big Leg",
+        position="K",
+        eligible_slots=("K",),
+        pro_team="FA",
+        projection=Projection(week=3, points=12.0),
+    )
+    state = make_state()
+    teams = tuple(
+        t.model_copy(
+            update={"roster": t.roster.model_copy(update={"bench": (*t.roster.bench, kicker)})}
+        )
+        if t.team_id == 2
+        else t
+        for t in state.teams
+    )
+    settings = state.settings.model_copy(
+        update={"slot_counts": {**state.settings.slot_counts, "K": 1}}
+    )
+    state = state.model_copy(update={"teams": teams, "settings": settings})
+
+    def kicker_offered(positions: list[str] | None) -> bool:
+        offers = search(state, 1, 10, partner_team_id=2, positions_wanted=positions)
+        return any(p.position == "K" for e in offers for p in (*e.offer.give, *e.offer.get))
+
+    assert not kicker_offered(None)
+    assert kicker_offered(["K"])
+
+
+def test_positional_impact_over_the_season_counts_the_bye() -> None:
+    """This week, a receiver on bye adds nothing; over the season he is a starter."""
+    state, star = _with_star_on_bye(make_state(), 2)
+    mine = list(state.team(1).roster.players)
+    weights = tuple(WeekWeight(week=w, weight=1.0) for w in range(3, 9))
+    give = [player_at(state, 1, "QB", 1)]
+    this_week = positional_impact(mine, give, [star], SLOTS)
+    season = positional_impact(mine, give, [star], SLOTS, weights)
+    assert this_week.get("WR", 0.0) == 0.0
+    assert season["WR"] > 3.0

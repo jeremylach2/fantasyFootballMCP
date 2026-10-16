@@ -1,16 +1,20 @@
 """Adapter-shared plumbing: the glue every ``mcp/tools_*.py`` module needs, so none of them
 duplicate it. Nothing here is business logic: it is entirely decode/dispatch, reading the
 lifespan context off ``ctx``, assembling a ``LeagueState`` from the provider protocol, resolving
-"my team", and looking a player up by name. The arithmetic lives in ``domain/``.
+"my team", looking a player up by name, and caching the one simulation every tool reads its
+playoff odds from. The arithmetic lives in ``domain/``.
 """
 
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Literal
 
 from mcp.server.mcpserver.exceptions import ToolError
@@ -22,11 +26,15 @@ from ffmcp.domain.models import (
     LeagueState,
     Player,
     PlayerWeek,
+    Projection,
     Roster,
     RosterSlot,
     Team,
 )
-from ffmcp.domain.schedule import WeekWeight, remaining_week_weights
+from ffmcp.domain.names import match_players, suggestions
+from ffmcp.domain.optimizer import is_ruled_out
+from ffmcp.domain.schedule import WeekWeight, as_of_week, remaining_week_weights
+from ffmcp.domain.simulate import TEAM_STRENGTH_SD, SeasonOutcome, simulate_rest_of_season
 from ffmcp.domain.usage import UsageProfile, usage_profiles
 from ffmcp.domain.variance import player_sds
 from ffmcp.errors import FFMCPError, PlayerNotFound, TeamNotConfigured, WeekOutOfRange
@@ -35,14 +43,18 @@ from ffmcp.server import AppContext
 logger = logging.getLogger("ffmcp.tools")
 
 OPTIONAL_FAILURES = (FFMCPError, ValueError, KeyError)
-"""What an *optional* signal (history, a second projection source, usage, betting lines) may
-fail with and still leave the tool standing. Each of these sources only refines an answer the
-server can already give from ESPN alone, so its absence becomes a one-line caveat rather than
-an error: a tool that refuses to optimize a lineup because GitHub is slow would be worse than
-one that optimizes it with position-level variance and says so."""
+"""What an *optional* signal (history, a second projection source, usage, betting lines, market
+values) may fail with and still leave the tool standing. Each of these sources only refines an
+answer the server can already give from ESPN alone, so its absence becomes a one-line caveat
+rather than an error: a tool that refuses to optimize a lineup because GitHub is slow would be
+worse than one that optimizes it with position-level variance and says so."""
 
 Detail = Literal["compact", "standard", "full"]
 """Shared by every list-shaped tool. Default is always ``"compact"``."""
+
+SIMULATION_TTL_SECONDS = 6 * 3_600
+"""How long one simulation of the season is reused. Its key is a fingerprint of everything it
+reads, so a roster move or a new projection is a new key, not a stale answer."""
 
 
 @contextmanager
@@ -64,7 +76,7 @@ def adapt_errors(wrap: type[Exception] = ToolError) -> Iterator[None]:
 
 _FREE_AGENT_POOL_SIZE = 300
 """Free agents pulled when searching by name or valuing the replacement pool. Generous enough
-to cover a 12-team league's relevant universe without asking the provider for everything."""
+to cover a 16-team league's relevant universe without asking the provider for everything."""
 
 
 def app_context(ctx: object) -> AppContext:
@@ -77,6 +89,12 @@ def app_context(ctx: object) -> AppContext:
     return ctx.request_context.lifespan_context  # type: ignore[attr-defined,no-any-return]
 
 
+def now(ctx: object) -> datetime:
+    """The current instant: the real clock live, the moment a fixture was recorded in demo
+    mode, so a lineup lock or a trade deadline reads the same in a test as on the day."""
+    return app_context(ctx).clock()
+
+
 async def resolve_week(ctx: object, week: int | None, settings: LeagueSettings) -> int:
     """The requested week, defaulting to the current one and validated against the season."""
     app = app_context(ctx)
@@ -87,13 +105,45 @@ async def resolve_week(ctx: object, week: int | None, settings: LeagueSettings) 
     return week
 
 
+def week_note(week: int, current_week: int) -> str | None:
+    """The one-line caveat every view of a later week carries."""
+    if week <= current_week:
+        return None
+    return (
+        f"Week {week} uses season-average projections with everyone healthy; byes applied. "
+        "Real matchups and injuries will move it."
+    )
+
+
+def team_as_of_week(team: Team, week: int, current_week: int) -> Team:
+    """``team`` as a later week sees it (``domain.schedule.as_of_week``), lineup as set now."""
+    if week == current_week:
+        return team
+
+    def view(player: Player) -> Player:
+        return as_of_week(player, week, current_week)
+
+    roster = team.roster
+    return team.model_copy(
+        update={
+            "roster": Roster(
+                slots=tuple(
+                    RosterSlot(slot=s.slot, player=view(s.player) if s.player else None)
+                    for s in roster.slots
+                ),
+                bench=tuple(view(p) for p in roster.bench),
+                ir=tuple(view(p) for p in roster.ir),
+            )
+        }
+    )
+
+
 async def load_league_state(ctx: object) -> LeagueState:
     """Assemble the full snapshot ``domain.simulate`` needs: settings, teams, and every
-    remaining week's matchups, fetched concurrently.
+    remaining week's matchups, fetched concurrently (the provider fetches the schedule once).
 
-    Tools that only need the roster/settings shape (``get_my_team``, ``find_waiver_targets``)
-    should call the provider directly instead: this pulls the whole remaining schedule and is
-    for the tools that price a season-long outcome.
+    Tools that only need the roster/settings shape (``get_my_team``) should call the provider
+    directly instead: this is for the tools that price a season-long outcome.
     """
     app = app_context(ctx)
     settings = await app.league.get_settings()
@@ -105,6 +155,99 @@ async def load_league_state(ctx: object) -> LeagueState:
     return LeagueState(
         settings=settings, teams=tuple(teams), current_week=current_week, matchups=matchups
     )
+
+
+def _fingerprint(state: LeagueState, n_sims: int) -> str:
+    """Everything the simulation reads, hashed. Live scores and ownership are left out: they
+    change by the minute on Sunday and the simulation does not read them."""
+
+    def player(p: Player) -> list[object]:
+        return [
+            p.player_id,
+            p.position,
+            p.eligible_slots,
+            p.projection.week if p.projection else None,
+            p.projection.points if p.projection else None,
+            p.injury_status,
+            p.injured,
+            p.bye_week,
+            p.season_rate,
+            [(o.week, o.points) for o in p.outlook],
+        ]
+
+    payload = {
+        "v": 2,
+        "sims": n_sims,
+        "strength": TEAM_STRENGTH_SD,
+        "settings": state.settings.model_dump(mode="json"),
+        "week": state.current_week,
+        "teams": [
+            [
+                t.team_id,
+                t.wins,
+                t.losses,
+                t.ties,
+                round(t.points_for, 2),
+                t.division_id,
+                [player(p) for p in t.roster.players],
+            ]
+            for t in state.teams
+        ],
+        "games": sorted(
+            (m.week, m.home_team_id or -1, m.away_team_id or -1, m.is_playoff)
+            for m in state.matchups
+        ),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:24]
+
+
+async def load_season_outcome(
+    ctx: object,
+    state: LeagueState,
+    *,
+    n_sims: int | None = None,
+    progress: Callable[[int, int], None] | None = None,
+) -> SeasonOutcome:
+    """The season simulation, run once per league state and reused by every tool that shows or
+    prices playoff odds. One source: before this, ``league_standings`` showed ESPN's number,
+    ``simulate_season`` its own, and ``analyze_matchup`` a third, and a manager who sees three
+    different odds for one team stops trusting all of them."""
+    app = app_context(ctx)
+    sims = n_sims if n_sims is not None else app.settings.sims
+    key = (
+        f"v2:sim:{state.settings.league_id}:{state.settings.season}:{state.current_week}:"
+        f"{_fingerprint(state, sims)}"
+    )
+
+    async def run() -> dict[str, object]:
+        outcome = await asyncio.to_thread(
+            simulate_rest_of_season, state, sims, None, progress=progress
+        )
+        return outcome.model_dump(mode="json")
+
+    return SeasonOutcome.model_validate(
+        await app.cache.get_or_fetch(key, SIMULATION_TTL_SECONDS, run)
+    )
+
+
+async def playoff_probabilities(ctx: object, state: LeagueState) -> dict[int, float]:
+    """``{team_id: probability in [0, 1]}``, from the shared simulation."""
+    return (await load_season_outcome(ctx, state)).playoff_probabilities()
+
+
+def week_weights_by_team(
+    state: LeagueState, probabilities: dict[int, float]
+) -> dict[int, tuple[WeekWeight, ...]]:
+    """Each team's remaining-season calendar, its playoff weeks weighted by its own simulated
+    playoff odds."""
+    return {
+        team.team_id: remaining_week_weights(
+            state.settings,
+            state.current_week,
+            playoff_probability=probabilities.get(team.team_id, 0.5),
+        )
+        for team in state.teams
+    }
 
 
 class _TeamChoice(BaseModel):
@@ -137,16 +280,26 @@ async def resolve_my_team_id(ctx: object, teams: Sequence[Team]) -> int:
 
 
 def find_players_by_name(pool: Sequence[Player], query: str) -> list[Player]:
-    """Case-insensitive lookup: exact matches win outright, otherwise every substring match.
+    """Everyone ``query`` names, after normalizing case, punctuation and suffixes
+    (``domain.names``): exact matches win outright, otherwise every substring match.
 
     Returns an empty list on no match and more than one entry on ambiguity. The caller decides
     what to do with either: on ambiguity, stop and do not guess.
     """
-    needle = query.strip().lower()
-    exact = [player for player in pool if player.name.lower() == needle]
-    if exact:
-        return exact
-    return [player for player in pool if needle in player.name.lower()]
+    return match_players(pool, query)
+
+
+def require_single_match(
+    matches: Sequence[Player], query: str, pool: Sequence[Player] = ()
+) -> Player:
+    """The one player ``query`` names, or a ``PlayerNotFound`` naming up to 3 candidates (on
+    ambiguity) or the closest names in ``pool`` (on no match)."""
+    if len(matches) != 1:
+        candidates = [player.name for player in matches] if matches else None
+        raise PlayerNotFound(
+            query, candidates, suggestions=None if matches else suggestions(pool, query)
+        )
+    return matches[0]
 
 
 async def player_pool(ctx: object, teams: Sequence[Team], week: int) -> list[Player]:
@@ -225,6 +378,88 @@ async def enrich_team_roster(ctx: object, team: Team) -> Team:
     return team.model_copy(update={"roster": Roster(slots=new_slots, bench=new_bench, ir=new_ir)})
 
 
+def needs_outlook(player: Player) -> bool:
+    """A player whose rest of season ESPN cannot price: ruled out, or with no season rate
+    (ESPN publishes zero for anyone on injured reserve)."""
+    return is_ruled_out(player) or player.season_rate is None
+
+
+async def attach_outlooks(
+    ctx: object, players: Sequence[Player], settings: LeagueSettings
+) -> list[Player]:
+    """``players`` with a week-by-week outlook attached to each injured one
+    (``MarketProvider.get_outlook``), which is how an expected return reaches every season
+    value. Everyone else, and everyone when the source is down, comes back unchanged."""
+    app = app_context(ctx)
+    injured = [player for player in players if needs_outlook(player)]
+    if not injured:
+        return list(players)
+    try:
+        outlooks = await app.market.get_outlook(injured, reception_points=settings.reception_points)
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("injury outlook unavailable: %s", exc)
+        return list(players)
+    result = []
+    for player in players:
+        weeks = outlooks.get(player.player_id)
+        if weeks:
+            outlook = tuple(
+                Projection(week=week, points=points, source="sleeper")
+                for week, points in sorted(weeks.items())
+            )
+            player = player.model_copy(update={"outlook": outlook})
+        result.append(player)
+    return result
+
+
+def quarterback_count(settings: LeagueSettings) -> int:
+    """Quarterbacks a lineup can start: 2 with a superflex slot, else 1."""
+    slots = settings.slot_counts
+    return 2 if slots.get("OP", 0) or slots.get("SUPERFLEX", 0) or slots.get("QB", 0) > 1 else 1
+
+
+async def load_trade_values(
+    ctx: object, settings: LeagueSettings
+) -> tuple[dict[int, float] | None, str | None]:
+    """Market trade values for a league of this shape, or ``None`` and a caveat."""
+    app = app_context(ctx)
+    try:
+        values = await app.values.get_trade_values(
+            team_count=settings.team_count,
+            quarterbacks=quarterback_count(settings),
+            reception_points=settings.reception_points,
+        )
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("market values unavailable: %s", exc)
+        return None, "Market values unavailable; offers are not checked for plausibility."
+    return (values or None), None
+
+
+def lineup_locks(
+    roster_slots: Sequence[RosterSlot],
+    bench: Sequence[Player],
+    slots: Sequence[str],
+    at: datetime,
+) -> tuple[dict[int, int], set[int]]:
+    """``(pinned, frozen)`` for ``domain.optimizer.optimize``: starters whose games have kicked
+    off stay in their slots (by index into ``slots``), benched ones stay benched."""
+    pinned: dict[int, int] = {}
+    taken: set[int] = set()
+    for roster_slot in roster_slots:
+        player = roster_slot.player
+        if player is None or player.kickoff is None or player.kickoff > at:
+            continue
+        index = next(
+            (i for i, slot in enumerate(slots) if slot == roster_slot.slot and i not in taken),
+            None,
+        )
+        if index is not None:
+            taken.add(index)
+            pinned[player.player_id] = index
+    frozen = {p.player_id for p in bench if p.kickoff is not None and p.kickoff <= at}
+    return pinned, frozen
+
+
 @dataclass
 class Insights:
     """Everything the variance model knows this week, and what it had to do without."""
@@ -289,25 +524,16 @@ async def load_game_lines(ctx: object) -> dict[str, GameLine]:
         return {}
 
 
-def week_weights_by_team(state: LeagueState) -> dict[int, tuple[WeekWeight, ...]]:
-    """Each team's remaining-season calendar, playoff weeks weighted by that team's own
-    playoff odds (ESPN's, already on ``Team``: no simulation needed to price a trade)."""
-    return {
-        team.team_id: remaining_week_weights(
-            state.settings, state.current_week, playoff_probability=team.playoff_pct / 100.0
-        )
-        for team in state.teams
-    }
+async def load_upcoming_lines(ctx: object) -> dict[str, list[GameLine]]:
+    """Every posted game line per pro team, or ``{}``: context only, so no caveat."""
+    app = app_context(ctx)
+    try:
+        return await app.odds.get_upcoming_lines()
+    except OPTIONAL_FAILURES as exc:
+        logger.warning("game lines unavailable: %s", exc)
+        return {}
 
 
 def league_players(state: LeagueState) -> list[Player]:
     """Every startable rostered player in the league."""
     return [player for team in state.teams for player in team.roster.players]
-
-
-def require_single_match(matches: Sequence[Player], query: str) -> Player:
-    """The one player ``query`` names, or a ``PlayerNotFound`` naming up to 3 candidates."""
-    if len(matches) != 1:
-        candidates = [player.name for player in matches] if matches else None
-        raise PlayerNotFound(query, candidates)
-    return matches[0]

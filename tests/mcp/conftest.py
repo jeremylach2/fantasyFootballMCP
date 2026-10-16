@@ -11,6 +11,8 @@ setup under pytest-asyncio. Entering and exiting entirely inside one test avoids
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from ffmcp.server import build_server
@@ -18,9 +20,12 @@ from mcp import Client
 
 
 @pytest.fixture(autouse=True)
-def _demo_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _demo_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("FFMCP_MODE", "demo")
     monkeypatch.setenv("FFMCP_TEAM_ID", "1")
+    # The simulation is cached on disk; a test must neither read a previous run's nor leave
+    # its own in the user's real cache directory.
+    monkeypatch.setenv("FFMCP_CACHE_DIR", str(tmp_path / "cache"))
 
 
 def demo_client() -> Client:

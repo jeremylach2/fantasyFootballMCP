@@ -1,6 +1,6 @@
 """Re-derive every fitted constant in ``domain/`` from real data, and the evidence behind it.
 
-    uv run python scripts/calibrate.py [--season 2025] [--xfp-train 2024]
+    uv run python scripts/calibrate.py [--season 2025] [--xfp-train 2024] [--backtest 2024 2025]
 
 Needs a live league (``.env``, as for ``FFMCP_MODE=live``) for the projection and variance
 sections, because the evidence is the league's own box scores: every rostered player's ESPN
@@ -23,6 +23,12 @@ Sections, each answering one design question with held-out data:
 6. **Lineup accuracy.** Is it a trait worth labelling managers by? (Yes; hindsight is not.)
 7. **Expected points.** Fit on one season, tested on the next: does volume predict future
    scoring better than points do, and does luck regress?
+8. **Team strength.** How far does a team's actual rest-of-season scoring stray from its
+   projected optimal lineup, beyond what weekly noise explains? That spread is the per-season
+   team-strength draw in ``domain/simulate.py`` (``TEAM_STRENGTH_SD``).
+9. **Playoff odds backtest.** Simulate each past season from several mid-season weeks, with the
+   model as shipped and with the one it replaced (this week's lineup held constant all season,
+   no strength term), and score both against who actually made the playoffs (Brier score).
 """
 
 from __future__ import annotations
@@ -41,9 +47,20 @@ import httpx2
 import numpy as np
 from espn_api.football import League
 
+import ffmcp.domain.simulate as simulate
 from ffmcp.config import load_settings
-from ffmcp.domain.models import PlayerWeek
+from ffmcp.domain.models import (
+    LeagueSettings,
+    LeagueState,
+    Matchup,
+    Player,
+    PlayerWeek,
+    Projection,
+    Roster,
+    Team,
+)
 from ffmcp.domain.optimizer import optimize
+from ffmcp.domain.schedule import week_lineup
 from ffmcp.providers.identity import IdentityIndex
 
 NFLVERSE = "https://github.com/nflverse/nflverse-data/releases/download"
@@ -60,6 +77,82 @@ XFP_FEATURES = {
 # ---------------------------------------------------------------------------
 # data
 # ---------------------------------------------------------------------------
+
+
+class Season:
+    """One completed league season, as box scores: every rostered player-week, every game, each
+    pro team's bye, and who made the playoffs."""
+
+    def __init__(self, season: int) -> None:
+        settings = load_settings()
+        league = League(
+            league_id=settings.league_id,
+            year=season,
+            espn_s2=settings.espn_s2.get_secret_value() if settings.espn_s2 else None,
+            swid=settings.swid.get_secret_value() if settings.swid else None,
+        )
+        self.season = season
+        self.settings = LeagueSettings(
+            league_id=0,
+            season=season,
+            team_count=len(league.teams),
+            playoff_team_count=int(league.settings.playoff_team_count),
+            reg_season_weeks=int(league.settings.reg_season_count),
+            slot_counts=dict(league.settings.position_slot_counts),
+        )
+        self.slots = self.settings.starting_slots
+        self.team_ids = tuple(sorted(int(t.team_id) for t in league.teams))
+        self.made_playoffs = {
+            int(t.team_id): int(t.standing) <= self.settings.playoff_team_count
+            for t in league.teams
+        }
+        self.rows: list[PlayerWeek] = []
+        self.games: list[tuple[int, int, int | None, float, float]] = []
+        self.byes: dict[str, int] = {}
+        for week in range(1, self.settings.reg_season_weeks + 1):
+            for box in league.box_scores(week):
+                home, away = _team_id(box.home_team), _team_id(box.away_team)
+                if home is not None:
+                    self.games.append(
+                        (week, home, away, float(box.home_score), float(box.away_score))
+                    )
+                for side in ("home", "away"):
+                    for p in getattr(box, f"{side}_lineup"):
+                        if getattr(p, "on_bye_week", False):
+                            self.byes[str(p.proTeam)] = week
+            self.rows += _week_rows(league, season, week)
+            print(f"  {season} week {week}: {len(self.rows)} player-weeks", file=sys.stderr)
+
+
+def _team_id(team: Any) -> int | None:
+    if team is None:
+        return None
+    return team if isinstance(team, int) else int(team.team_id)
+
+
+def _week_rows(league: League, season: int, week: int) -> list[PlayerWeek]:
+    rows: list[PlayerWeek] = []
+    for box in league.box_scores(week):
+        for side in ("home", "away"):
+            team_id = _team_id(getattr(box, f"{side}_team"))
+            for p in getattr(box, f"{side}_lineup"):
+                rows.append(
+                    PlayerWeek(
+                        season=season,
+                        week=week,
+                        player_id=int(p.playerId),
+                        name=str(p.name),
+                        position=str(p.position),
+                        pro_team=str(p.proTeam),
+                        eligible_slots=tuple(str(s) for s in p.eligibleSlots),
+                        fantasy_team_id=team_id,
+                        slot=str(p.slot_position),
+                        projected=p.projected_points,
+                        actual=float(p.points or 0.0),
+                        played=bool(p.game_played) and not bool(p.on_bye_week),
+                    )
+                )
+    return rows
 
 
 def league_history(season: int) -> tuple[list[PlayerWeek], tuple[str, ...]]:
@@ -353,6 +446,178 @@ def expected_points(train: int, test: int) -> None:
                 print(f"     {label}: n={band.sum()}, future minus past points/g {change:+.2f}")
 
 
+def rosters_as_of(season: Season, week: int) -> dict[int, list[Player]]:
+    """Each team's roster in ``week`` (IR excluded), each player carrying that week's projection,
+    his bye, and a season rate built only from what was known by then: the mean of his own
+    projections in the weeks up to and including ``week``."""
+    known: dict[int, list[float]] = defaultdict(list)
+    for r in season.rows:
+        if r.week <= week and r.projected and r.projected > 0.0:
+            known[r.player_id].append(r.projected)
+    rosters: dict[int, list[Player]] = defaultdict(list)
+    for r in season.rows:
+        if r.week != week or r.fantasy_team_id is None or r.slot == "IR":
+            continue
+        rates = known.get(r.player_id)
+        rosters[r.fantasy_team_id].append(
+            Player(
+                player_id=r.player_id,
+                name=r.name,
+                position=r.position,
+                eligible_slots=r.eligible_slots,
+                pro_team=r.pro_team,
+                projection=Projection(week=week, points=r.projected or 0.0),
+                bye_week=season.byes.get(r.pro_team),
+                season_rate=float(np.mean(rates)) if rates else None,
+            )
+        )
+    return rosters
+
+
+def team_strength(seasons: Sequence[Season]) -> float:
+    print("\n8. Team strength: rest-of-season actual average around the projected lineup")
+    residuals, within, counts = [], [], []
+    for season in seasons:
+        actual: dict[tuple[int, int], float] = defaultdict(float)
+        for r in season.rows:
+            if r.started and r.fantasy_team_id is not None:
+                actual[(r.fantasy_team_id, r.week)] += r.actual
+        last = season.settings.reg_season_weeks
+        for as_of in range(3, last - 3):
+            rosters = rosters_as_of(season, as_of)
+            for team_id, players in rosters.items():
+                misses = []
+                for week in range(as_of + 1, last + 1):
+                    if (team_id, week) not in actual:
+                        continue
+                    projected = week_lineup(players, season.slots, week, as_of).projected_points
+                    misses.append(actual[(team_id, week)] - projected)
+                if len(misses) >= 3:
+                    residuals.append(float(np.mean(misses)))
+                    within.append(float(np.var(misses, ddof=1)))
+                    counts.append(len(misses))
+    res = np.array(residuals)
+    noise = float(np.mean(np.array(within) / np.array(counts)))
+    between = float(np.var(res, ddof=1))
+    sd = math.sqrt(max(between - noise, 0.0))
+    print(
+        f"   {len(res)} team-horizons: league-wide bias {res.mean():+.1f} pts/wk (shared by all "
+        "teams, so it moves nobody's odds)"
+    )
+    print(
+        f"   variance of a team's average miss {between:.1f}, of which weekly noise explains "
+        f"{noise:.1f}"
+    )
+    print(f"   -> TEAM_STRENGTH_SD = {sd:.1f}")
+    return sd
+
+
+def _state_as_of(season: Season, week: int, *, legacy: bool) -> LeagueState:
+    """The league as it stood going into ``week``: records from the games before it, rosters
+    and projections from that week. ``legacy`` rebuilds what the replaced model saw: every
+    player's later weeks pinned to this week's projection, byes and all."""
+    records: dict[int, list[float]] = {t: [0.0, 0.0, 0.0, 0.0] for t in season.team_ids}
+    matchups = []
+    for game_week, home, away, home_score, away_score in season.games:
+        if game_week < week and away is not None:
+            for team, mine, theirs in (
+                (home, home_score, away_score),
+                (away, away_score, home_score),
+            ):
+                rec = records[team]
+                rec[0 if mine > theirs else 1 if mine < theirs else 2] += 1
+                rec[3] += mine
+        elif game_week >= week:
+            matchups.append(
+                Matchup(
+                    week=game_week,
+                    home_team_id=home,
+                    away_team_id=away,
+                    home_score=0.0,
+                    away_score=0.0,
+                    home_projected=0.0,
+                    away_projected=0.0,
+                )
+            )
+    rosters = rosters_as_of(season, week)
+    teams = []
+    for team_id in season.team_ids:
+        players = rosters.get(team_id, [])
+        if legacy:
+            players = [
+                p.model_copy(
+                    update={
+                        "season_rate": 0.0
+                        if p.bye_week == week
+                        else (p.projection.points if p.projection else 0.0),
+                        "bye_week": None,
+                    }
+                )
+                for p in players
+            ]
+        wins, losses, ties, points_for = records[team_id]
+        teams.append(
+            Team(
+                team_id=team_id,
+                name=str(team_id),
+                abbrev=str(team_id),
+                wins=int(wins),
+                losses=int(losses),
+                ties=int(ties),
+                points_for=points_for,
+                points_against=0.0,
+                standing=0,
+                playoff_pct=0.0,
+                roster=Roster(slots=(), bench=tuple(players)),
+            )
+        )
+    return LeagueState(
+        settings=season.settings, teams=tuple(teams), current_week=week, matchups=tuple(matchups)
+    )
+
+
+def playoff_backtest(seasons: Sequence[Season], strength_sd: float) -> None:
+    print("\n9. Playoff odds backtest: Brier score against who actually made it (lower is better)")
+    weeks = (4, 6, 8, 10)
+    models = (
+        ("replaced (this week held constant)", True, 0.0),
+        ("per-week means, no strength term", False, 0.0),
+        (f"as shipped (strength sd {strength_sd:.1f})", False, strength_sd),
+    )
+    original = simulate.TEAM_STRENGTH_SD
+    try:
+        for label, legacy, sd in models:
+            simulate.TEAM_STRENGTH_SD = sd
+            scores, confident_misses = [], 0
+            by_week: dict[int, list[float]] = defaultdict(list)
+            for season in seasons:
+                for week in weeks:
+                    state = _state_as_of(season, week, legacy=legacy)
+                    outcome = simulate.simulate_rest_of_season(
+                        state, n_sims=5_000, rng=np.random.default_rng(week)
+                    )
+                    for team in outcome.teams:
+                        p = team.playoff_odds / 100.0
+                        made = season.made_playoffs[team.team_id]
+                        scores.append((p - made) ** 2)
+                        by_week[week].append((p - made) ** 2)
+                        confident_misses += (p >= 0.9 and not made) or (p <= 0.1 and made)
+            print(
+                f"   {label:42} Brier {np.mean(scores):.4f}  "
+                f"(n={len(scores)}; 90%+ calls that missed: {confident_misses})"
+            )
+            print(
+                "     by week: "
+                + ", ".join(f"{w}: {np.mean(v):.3f}" for w, v in sorted(by_week.items()))
+            )
+    finally:
+        simulate.TEAM_STRENGTH_SD = original
+    spots = np.mean([s.settings.playoff_team_count / len(s.team_ids) for s in seasons])
+    print(
+        f"   reference: a flat {100 * spots:.0f}% for every team scores {spots * (1 - spots):.4f}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -361,8 +626,23 @@ def main() -> None:
         "--season", type=int, default=2025, help="completed league season to fit on"
     )
     parser.add_argument("--xfp-train", type=int, default=2024, help="nflverse season to fit xFP on")
+    parser.add_argument(
+        "--backtest",
+        type=int,
+        nargs="*",
+        default=[2024, 2025],
+        help="completed league seasons for sections 8 and 9",
+    )
+    parser.add_argument(
+        "--only-season-model", action="store_true", help="run sections 8 and 9 only"
+    )
     args = parser.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+
+    if args.only_season_model:
+        seasons = [Season(year) for year in args.backtest]
+        playoff_backtest(seasons, team_strength(seasons))
+        return
 
     all_rows, slots = league_history(args.season)
     rows = scored(all_rows)
@@ -374,6 +654,8 @@ def main() -> None:
     second_source(rows, fractions, args.season)
     lineup_accuracy(all_rows, slots)
     expected_points(args.xfp_train, args.xfp_train + 1)
+    seasons = [Season(year) for year in args.backtest]
+    playoff_backtest(seasons, team_strength(seasons))
 
 
 if __name__ == "__main__":

@@ -81,10 +81,15 @@ class OddsApiProvider:
         self._api_key = api_key
 
     async def get_game_lines(self) -> dict[str, GameLine]:
+        return {team: games[0] for team, games in (await self.get_upcoming_lines()).items()}
+
+    async def get_upcoming_lines(self) -> dict[str, list[GameLine]]:
+        """Every game the books have posted for each team, soonest first: this week and,
+        from midweek, usually next week too."""
         if not self._api_key:
             return {}
         events = await self._cache.get_or_fetch("v1:odds:nfl", LINES_TTL, self._fetch)
-        return game_lines_from_events(events)
+        return game_lines_by_team(events)
 
     async def _fetch(self) -> list[dict[str, Any]]:
         params = {
@@ -110,11 +115,16 @@ class OddsApiProvider:
 def game_lines_from_events(events: list[dict[str, Any]]) -> dict[str, GameLine]:
     """Each team's *earliest* listed game, as a ``GameLine``. Pure, so it is tested without the
     network against a recorded payload."""
-    lines: dict[str, GameLine] = {}
+    return {team: games[0] for team, games in game_lines_by_team(events).items()}
+
+
+def game_lines_by_team(events: list[dict[str, Any]]) -> dict[str, list[GameLine]]:
+    """Every listed game for each team, soonest first."""
+    lines: dict[str, list[GameLine]] = {}
     for event in sorted(events, key=lambda e: e.get("commence_time", "")):
         home = TEAM_ABBREVIATIONS.get(event.get("home_team", ""))
         away = TEAM_ABBREVIATIONS.get(event.get("away_team", ""))
-        if home is None or away is None or home in lines or away in lines:
+        if home is None or away is None:
             continue
         spreads: list[float] = []
         totals: list[float] = []
@@ -133,20 +143,24 @@ def game_lines_from_events(events: list[dict[str, Any]]) -> dict[str, GameLine]:
         home_spread = statistics.median(spreads)
         total = statistics.median(totals)
         kickoff = event.get("commence_time")
-        lines[home] = GameLine(
-            pro_team=home,
-            opponent=away,
-            implied_total=total / 2 - home_spread / 2,
-            spread=home_spread,
-            total=total,
-            kickoff=kickoff,
+        lines.setdefault(home, []).append(
+            GameLine(
+                pro_team=home,
+                opponent=away,
+                implied_total=total / 2 - home_spread / 2,
+                spread=home_spread,
+                total=total,
+                kickoff=kickoff,
+            )
         )
-        lines[away] = GameLine(
-            pro_team=away,
-            opponent=home,
-            implied_total=total / 2 + home_spread / 2,
-            spread=-home_spread,
-            total=total,
-            kickoff=kickoff,
+        lines.setdefault(away, []).append(
+            GameLine(
+                pro_team=away,
+                opponent=home,
+                implied_total=total / 2 + home_spread / 2,
+                spread=-home_spread,
+                total=total,
+                kickoff=kickoff,
+            )
         )
     return lines

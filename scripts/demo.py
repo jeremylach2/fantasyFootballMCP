@@ -12,9 +12,11 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import tempfile
 
 os.environ["FFMCP_MODE"] = "demo"
 os.environ.setdefault("FFMCP_TEAM_ID", "1")
+os.environ["FFMCP_CACHE_DIR"] = tempfile.mkdtemp(prefix="ffmcp-demo-")
 
 from ffmcp.server import build_server
 from mcp import Client
@@ -35,6 +37,7 @@ TOUR: tuple[tuple[str, str, dict[str, object]], ...] = (
         {"names": ["Dominic Okafor", "Elijah Villanueva"]},
     ),
     ("Who should I pick up? -> find_waiver_targets", "find_waiver_targets", {}),
+    ("Byes and drops ahead -> roster_planner", "roster_planner", {}),
     ("Who is due to regress? -> buy_low_sell_high", "buy_low_sell_high", {}),
     ("One player, in depth", "player_report", {"name": "Damon Rios"}),
     ("Should I make this trade? -> find_trades", "find_trades", {}),
@@ -47,13 +50,10 @@ TOUR: tuple[tuple[str, str, dict[str, object]], ...] = (
             "partner_team_id": 2,
         },
     ),
-    (
-        "How likely am I to make the playoffs? -> simulate_season",
-        "simulate_season",
-        {"n_sims": 2000},
-    ),
+    ("How likely am I to make the playoffs? -> simulate_season", "simulate_season", {}),
     ("League standings", "league_standings", {}),
     ("Who is actually good? -> power_rankings", "power_rankings", {}),
+    ("What just happened? -> league_activity", "league_activity", {}),
     ("How far should I trust the projections? -> projection_accuracy", "projection_accuracy", {}),
 )
 
